@@ -1,6 +1,6 @@
-# Portfolio de Mathias Cassegrain
+# Portfolio de Louan ferchaud
 
-this github project is my portfolio but can also be used like a template for your own ideas of websites
+this github project is my portfolio and had been taken from https://github.com/technovieux/portfolio
 
 ---
 
