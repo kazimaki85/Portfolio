@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Portfolio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+        integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style_subpages.css">
+    <link rel="stylesheet" href="responsive.css">
+    <link rel="icon" href="../images_files/tabicon.ico" type="image/ico">
+</head>
+
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="logo">
+                <h2 class="logo-heading">mathias' portfolio</h2>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <i class="fas fa-bars hamburger-icon"></i>
+                <i class="fas fa-times cross-icon"></i>
+            </div>
+            <div class="menu">
+                <ul class="menu-list">
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#home">
+                            Home</a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#projects">
+                            Projects</a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#about">
+                            About </a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#services">
+                            Services </a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#contact"> Contact Me
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+
+    
+    
+    <section id="home" class="hero" style="background-image: url('../images_files/entertainment.jpg');
+                                           background-repeat: no-repeat;
+                                           background-size: cover;
+                                           background-position: center;
+                                           width: 100%;
+                                           height: 100vh;
+                                           display: flex;
+                                           align-items: center;
+                                           justify-content: start;
+                                           margin: 4.8rem 0 0 0;">
+
+        <div class="intro">
+            <div class="headings">
+                <h1 class="my-heading">entertainment</h1>
+                <h1 class="my-heading">industry</h1>
+                <h4 class="sub-heading">
+                    Make way for the artist !
+                </h4>
+            </div>
+        </div>
+
+    </section>
+
+    
+    <section id="more-details" class="more-details">
+        <div class="more-details-text">
+            <h1 class="my-heading">More details</h1>
+            <p class="lead-para">
+                My passion for theater began in 2021 when I discovered Jean-Paul Rappeneau's adaptation of Cyrano de Bergerac. 
+            </p>
+            <p>
+                It was after that that I wanted to join a theater troupe, which I did in January 2023, allowing me to perform in my first show, a staging of Dossier Brulant by Jacques Barant. 
+            </p>
+            <p>
+                Subsequently, I participated in the implementation of HRUN's video mapping in 2023, and these moments with the production team reinforced my desire to work in the performing arts.
+            </p>
+            <p>
+                After that, I had to move away to continue my studies, which meant leaving the troupe. Then, in january 2025, I joined RECORDATIO, a sound and light show troupe that performs at historic sites. That same year, I performed in the show “Souviens-toi Cornilly” (Remember Cornilly), staged at Cornilly Abbey, and “Mélusine et le pacte rompu” (Mélusine and the Broken Pact) at the Château de la Recepte in Vouvant.
+            </p>
+
+
+        </div>
+    </section>
+
+    
+
+    <section id="more-images" class="more-images">
+        <div class="more-images-text">
+
+            <h1 class="my-heading">More images</h1>
+            
+            <div class="viewer-container" id="visionneuse-entertainment">
+  
+                <div class="main-display">
+                    <button id="prev-btn" class="nav-btn prev-btn">❮</button> 
+    
+                    <div class="media-content">
+                        <img id="main-image" src="" alt="Image ou vidéo principale" style="display: none;">
+                        <video id="main-video" src="" controls style="display: none;"></video>
+                    </div>
+    
+                    <button id="next-btn" class="nav-btn next-btn">❯</button>
+                </div>
+  
+                <div class="media-list" id="media-list">
+                </div>
+
+            </div>
+        
+
+        </div>
+    </section>
+
+
+
+    <div id="home-button" class="home-button">
+        <button class="btn ghost-btn" id="ghost-home-btn" onclick="window.location.href='../index.html#projects';">Back to home</button>
+    </div>
+
+
+    <footer class="footer">
+        <div class="footer-content text-center">
+            <h4>
+                created in 2025, made on earth
+            </h4>
+
+            <div class="social-links">
+                <div class="footer-menu">
+                    <ul class="footer-menu-list">
+                        <li class="footer-list-items">
+                            <a class="footer-links" target="_blank" href="https://www.facebook.com/mathias.cassegrain/about">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                        </li>
+                        <li class="footer-list-items">
+                            <a class="footer-links" target="_blank" href="https://www.instagram.com/le_grand_h0mme/">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                        </li>
+                        <li class="footer-list-items">
+                            <a class="footer-links" target="_blank" href="https://www.linkedin.com/in/mathias-cassegrain-90246328b/">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"
+        integrity="sha512-uKQ39gEGiyUJl4AI6L+ekBdGKpGw4xJ55+xyJG7YFlJokPNYegn9KwQ3P8A7aFQAUtUsAQHep+d/lrGqrbPIDQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    </script>
+    <script src="script.js"></script>
+    <script src="viewer.js"></script>
+    
+    <script>
+        const designMedia = [
+            { type: 'image', src: '../images_files/entertainment.jpg', name: 'aperçu' },
+            { type: 'image', src: '../images_files/entertainment/vouvant-1.jpg', name: 'vouvant 1' },
+            { type: 'image', src: '../images_files/entertainment/vouvant-2.jpg', name: 'vouvant 2' },
+            { type: 'image', src: '../images_files/entertainment/vouvant-3.jpg', name: 'vouvant 3' },
+            { type: 'image', src: '../images_files/entertainment/cornilly-1.jpg', name: 'cornilly 1' },
+            
+        ];
+
+        // Appel de la fonction pour initialiser la visionneuse avec les données spécifiques
+        // 'visionneuse-principale' est l'ID du conteneur dans le HTML
+        initMediaViewer(designMedia, 'visionneuse-entertainment');
+    </script>
+</body>
+
+</html>

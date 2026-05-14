@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Portfolio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+        integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style_subpages.css">
+    <link rel="stylesheet" href="responsive.css">
+    <link rel="icon" href="../images_files/tabicon.ico" type="image/ico">
+</head>
+
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="logo">
+                <h2 class="logo-heading">mathias' portfolio</h2>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <i class="fas fa-bars hamburger-icon"></i>
+                <i class="fas fa-times cross-icon"></i>
+            </div>
+            <div class="menu">
+                <ul class="menu-list">
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#home">
+                            Home</a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#projects">
+                            Projects</a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#about">
+                            About </a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#services">
+                            Services </a>
+                    </li>
+                    <li class="menu-list-items">
+                        <a class="links" href="../index.html#contact"> Contact Me
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+
+    
+    
+    <section id="home" class="hero" style="background-image: url('../images_files/hand\ gesture\ gif.gif');
+                                           background-repeat: no-repeat;
+                                           background-size: cover;
+                                           background-position: center;
+                                           width: 100%;
+                                           height: 100vh;
+                                           display: flex;
+                                           align-items: center;
+                                           justify-content: start;
+                                           margin: 4.8rem 0 0 0;">
+
+        <div class="intro">
+            <div class="headings">
+                <h1 class="my-heading">Hands</h1>
+                <h1 class="my-heading">Experiments</h1>
+                <h4 class="sub-heading">
+                    Need a hand ?
+                </h4>
+            </div>
+        </div>
+
+    </section>
+
+    
+    <section id="more-details" class="more-details">
+        <div class="more-details-text">
+            <h1 class="my-heading">More details</h1>
+            <p class="lead-para">
+                As part of my robot project, I wondered if it was possible to control it remotely so that my movements would be replicated. That's why I focused on the hands and how to control them using a computer.
+            </p>
+            <p>
+                The first part I had to focus on was controlling the artificial hand. This was made possible by servomotors and 3D printing. The hand is complete, and each finger can be controlled with a value between zero and 180°.
+            </p>
+            <p>
+                For the detection part, after some research, using Python and MediaPipe was the best solution. Then, mathematical functions calculate the space between each phalanx and calculate the angle of each finger to determine how straight or bent it is.
+                All that remained was to assemble the two to control the artificial hand in real time.
+            </p>
+
+
+        </div>
+    </section>
+
+    
+
+    <section id="more-images" class="more-images">
+        <div class="more-images-text">
+
+            <h1 class="my-heading">More images</h1>
+            
+            <div class="viewer-container" id="visionneuse-hand">
+  
+                <div class="main-display">
+                    <button id="prev-btn" class="nav-btn prev-btn">❮</button> 
+    
+                    <div class="media-content">
+                        <img id="main-image" src="" alt="Image ou vidéo principale" style="display: none;">
+                        <video id="main-video" src="" controls style="display: none;"></video>
+                    </div>
+    
+                    <button id="next-btn" class="nav-btn next-btn">❯</button>
+                </div>
+  
+                <div class="media-list" id="media-list">
+                </div>
+
+            </div>
+        
+
+        </div>
+    </section>
+
+
+
+    <div id="home-button" class="home-button">
+        <button class="btn ghost-btn" id="ghost-home-btn" onclick="window.location.href='../index.html#projects';">Back to home</button>
+    </div>
+
+
+    <footer class="footer">
+        <div class="footer-content text-center">
+            <h4>
+                created in 2025, made on earth
+            </h4>
+
+            <div class="social-links">
+                <div class="footer-menu">
+                    <ul class="footer-menu-list">
+                        <li class="footer-list-items">
+                            <a class="footer-links" target="_blank" href="https://www.facebook.com/mathias.cassegrain/about">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                        </li>
+                        <li class="footer-list-items">
+                            <a class="footer-links" target="_blank" href="https://www.instagram.com/le_grand_h0mme/">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                        </li>
+                        <li class="footer-list-items">
+                            <a class="footer-links" target="_blank" href="https://www.linkedin.com/in/mathias-cassegrain-90246328b/">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"
+        integrity="sha512-uKQ39gEGiyUJl4AI6L+ekBdGKpGw4xJ55+xyJG7YFlJokPNYegn9KwQ3P8A7aFQAUtUsAQHep+d/lrGqrbPIDQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    </script>
+    <script src="script.js"></script>
+    <script src="viewer.js"></script>
+    
+    <script>
+        const handMedia = [
+            { type: 'image', src: '../images_files/hand gesture gif.gif', name: 'aperçu' }
+        ];
+
+        // Appel de la fonction pour initialiser la visionneuse avec les données spécifiques
+        // 'visionneuse-principale' est l'ID du conteneur dans le HTML
+        initMediaViewer(handMedia, 'visionneuse-hand');
+    </script>
+</body>
+
+</html>
