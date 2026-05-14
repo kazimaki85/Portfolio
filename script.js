@@ -19,14 +19,14 @@ hamburger.addEventListener('click', function () {
 });
 
 function telechargerPDF() {
-    const pdfurlen = './images_files/CV_mathias_cassegrain_en.pdf';
+    const pdfurlen = './images_files/English_CV_Louan_Ferchaud.pdf';
     const pdfurlfr = './images_files/CV_mathias_cassegrain_fr.pdf';
     const link = document.createElement('a');
     link.href = pdfurlen;
     if (userLang.toLowerCase().startsWith('fr')) {
         link.href = pdfurlfr;
     }
-    link.download = 'CV_mathias_cassegrain.pdf'; // Optional: specify a default file name
+    link.download = 'English_CV_Louan_Ferchaud.pdf'; // Optional: specify a default file name
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
