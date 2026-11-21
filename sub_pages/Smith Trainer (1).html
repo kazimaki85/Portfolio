@@ -12,8 +12,8 @@ header{display:flex;justify-content:space-between;align-items:baseline;padding:1
 h1{font-size:22px}.tot{color:var(--mu)}.tot b{color:var(--ac);font-size:18px}
 main{display:grid;grid-template-columns:minmax(0,680px) minmax(300px,1fr);gap:16px;padding:16px;max-width:1200px;margin:auto}
 @media(max-width:860px){main{grid-template-columns:1fr}}
-#cw{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:6px;display:flex;justify-content:center}
-canvas{cursor:crosshair;touch-action:manipulation;max-width:100%}
+#cw{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:6px;display:flex;flex-direction:column;align-items:center;position:relative;align-self:start}.zb{position:absolute;top:10px;right:10px;display:flex;gap:4px;align-items:center;font-size:13px;color:var(--mu)}.zb button{min-width:32px;height:32px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:6px;cursor:pointer}#ro{min-height:20px;font-size:13px;padding:4px;color:var(--mu)}.sol{background:var(--bg);border-radius:8px;padding:6px 12px;margin:10px 0}.sol h3{margin:6px 0;font-family:Georgia,serif}.sol p{margin:6px 0}
+canvas{cursor:crosshair;touch-action:none;max-width:100%}
 #panel{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:16px;align-self:start}
 .card{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:10px 12px;margin:8px 0;color:var(--tx);cursor:pointer;font:inherit}
 .card:hover,.card:focus-visible{border-color:var(--ac)}.card b{display:block}.card span{color:var(--mu);font-size:13px}
@@ -34,7 +34,7 @@ input.g{border-color:var(--ok)}input.b{border-color:var(--ko)}
 .card .row{margin-top:8px}.card .btn span{font-size:12px;color:inherit;opacity:.8}.tools .clr{border-style:dashed}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.sm{font-size:13px;color:var(--mu)}
 </style></head><body>
 <header><h1>Smith Trainer</h1><div class="tot">Progression totale : <b id="tot">0</b> pts</div></header>
-<main><div id="cw"><canvas id="cv" aria-label="Abaque de Smith interactif"></canvas></div><div id="panel"></div></main>
+<main><div id="cw"><div class="zb"><span id="zl">×1.0</span><button onclick="zoomBtn(1.5)" aria-label="Zoom avant">+</button><button onclick="zoomBtn(1/1.5)" aria-label="Zoom arrière">−</button><button onclick="zoomReset()">1:1</button></div><canvas id="cv" aria-label="Abaque de Smith interactif"></canvas><div id="ro"></div></div><div id="panel"></div></main>
 <script>
 const $=s=>document.querySelector(s);
 const C={add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],div:(a,b)=>{const d=b[0]*b[0]+b[1]*b[1];return[(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d]},abs:a=>Math.hypot(a[0],a[1]),arg:a=>Math.atan2(a[1],a[0])*180/Math.PI,pol:(r,d)=>[r*Math.cos(d*Math.PI/180),r*Math.sin(d*Math.PI/180)]};
@@ -127,86 +127,227 @@ const EX=[
  {n:'Espacement λ/8',mk:()=>m6(.125,pick([.2,.5]))},{n:'Espacement 3λ/8',mk:()=>m6(.375,pick([.2,.5]))},{n:'Espacement quelconque',mk:()=>m6(pick([.15,.2,.3,.35]),pick([.2,.5]))},{n:'Adaptation possible ?',mk:()=>m6(.125,pick([.5,5]),1)}]}
 ];
 
-/* ---------- Géométrie de l’abaque ---------- */
-const G=[];[.2,.5,1,2,5].forEach(r=>G.push({id:'r:'+r,c:[r/(1+r),0],rad:1/(1+r),lab:'r='+f(r,1)}));
-[.2,.5,1,2,5].forEach(x=>[1,-1].forEach(s=>G.push({id:'x:'+x*s,c:[1,1/(x*s)],rad:1/x,lab:'x='+f(x*s,1)})));
-const cv=$('#cv'),ctx=cv.getContext('2d');let W=0,O=0,R=0;
-const X=p=>O+p[0]*R,Y=p=>O-p[1]*R,cs=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-function size(){const w=Math.max(300,Math.min($('#cw').clientWidth-14,680)),d=devicePixelRatio||1;cv.width=cv.height=w*d;cv.style.width=cv.style.height=w+'px';ctx.setTransform(d,0,0,d,0,0);W=w;O=w/2;R=w*.375;draw()}
-function arcs(g,lw,col,dash){ctx.save();ctx.beginPath();ctx.arc(O,O,R,0,7);ctx.clip();ctx.beginPath();ctx.arc(X(g.c),Y(g.c),g.rad*R,0,7);ctx.lineWidth=lw;ctx.strokeStyle=col;ctx.setLineDash(dash||[]);ctx.stroke();ctx.restore()}
-function dot(p,col,lab){ctx.beginPath();ctx.arc(X(p),Y(p),5,0,7);ctx.fillStyle=col;ctx.fill();ctx.font='bold 13px sans-serif';ctx.fillText(lab,X(p)+8,Y(p)-8)}
-function draw(){
- const tx=cs('--tx'),mu=cs('--mu'),ln=cs('--ln'),ac=cs('--ac'),cr=cs('--r'),cx=cs('--x'),gh=cs('--gh'),ko=cs('--ko'),fs=Math.max(9,W*.016);
- ctx.clearRect(0,0,W,W);ctx.lineWidth=1.5;ctx.strokeStyle=tx;ctx.beginPath();ctx.arc(O,O,R,0,7);ctx.stroke();
- ctx.beginPath();ctx.moveTo(O-R,O);ctx.lineTo(O+R,O);ctx.strokeStyle=ln;ctx.lineWidth=1;ctx.stroke();
- G.forEach(g=>arcs(g,1,g.id[0]=='r'?cr:cx,[]));
- ctx.font=fs+'px sans-serif';ctx.textAlign='left';
- G.forEach(g=>{if(g.id[0]=='r'){ctx.fillStyle=cr;const u=(+g.id.slice(2)-1)/(+g.id.slice(2)+1);ctx.fillText(g.id.slice(2),X([u,0])+2,O-3)}else{const x=+g.id.slice(2),q=C.div(C.sub([0,x],[1,0]),C.add([0,x],[1,0])),k=.9;ctx.fillStyle=cx;ctx.textAlign='center';ctx.fillText(g.id.slice(2),X([q[0]*k,q[1]*k]),Y([q[0]*k,q[1]*k]))}});
- ctx.textAlign='center';ctx.fillStyle=tx;ctx.fillText('0',O-R-9,O+4);ctx.fillText('∞',O+R+10,O+4);
- for(let a=-180;a<180;a+=5){const c=Math.cos(a*Math.PI/180),s=Math.sin(a*Math.PI/180),L=a%10?.008*W:.014*W;ctx.beginPath();ctx.moveTo(O+R*c,O-R*s);ctx.lineTo(O+(R+L)*c,O-(R+L)*s);ctx.strokeStyle=mu;ctx.stroke();
-  if(a%30==0){ctx.fillStyle=mu;ctx.fillText(a+'°',O+(R+.045*W)*c,O-(R+.045*W)*s+3)}}
- for(let k=0;k<50;k++){const a=(180-720*k/100)*Math.PI/180,c=Math.cos(a),s=Math.sin(a),L=k%5?.01*W:.02*W;ctx.beginPath();ctx.moveTo(O+(R+.07*W)*c,O-(R+.07*W)*s);ctx.lineTo(O+(R+.07*W+L)*c,O-(R+.07*W+L)*s);ctx.strokeStyle=ac;ctx.stroke();
-  if(k%5==0){ctx.fillStyle=ac;ctx.fillText(f(k/100),O+(R+.12*W)*c,O-(R+.12*W)*s+3)}}
- ctx.fillStyle=mu;ctx.fillText('angle de Γ',O,O-R-.062*W+fs*.2);ctx.fillStyle=ac;ctx.fillText('λ vers le générateur →',O,W-4);
- S.dr.sel.forEach(id=>arcs(G.find(g=>g.id==id),3.5,ac));
- S.dr.cc.forEach(k=>{ctx.beginPath();ctx.arc(X(k.c),Y(k.c),k.rad*R,0,7);ctx.lineWidth=2.5;ctx.strokeStyle=ac;ctx.stroke()});
- ctx.save();ctx.beginPath();ctx.arc(O,O,R*1.25,0,7);ctx.clip();ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.strokeStyle=cs('--sc');
- S.sc.forEach(l=>{const d=C.sub(l.b,l.a),n=C.abs(d),u=[d[0]/n*3,d[1]/n*3],A=C.sub(l.a,u),B=C.add(l.a,u);ctx.beginPath();ctx.moveTo(X(A),Y(A));ctx.lineTo(X(B),Y(B));ctx.stroke()});
- S.cl.forEach(k=>{ctx.beginPath();ctx.arc(X(k.c),Y(k.c),k.rad*R,0,7);ctx.stroke()});ctx.restore();
- if(S.p1){ctx.beginPath();ctx.arc(X(S.p1),Y(S.p1),4,0,7);ctx.fillStyle=cs('--sc');ctx.fill()}
- ((S.inst&&S.inst.given)||[]).forEach(q=>dot(q.p,tx,q.lab));
- S.dr.cs.forEach(r=>{ctx.beginPath();ctx.arc(O,O,r*R,0,7);ctx.lineWidth=2.5;ctx.strokeStyle=ac;ctx.stroke()});
- S.dr.pts.forEach(q=>dot(q.p,ac,q.lab));
- if(S.flash)arcs(G.find(g=>g.id==S.flash),3.5,ko);
- const s=cur();if(s&&S.hl>=3){const gt=ghostOf(s);ctx.setLineDash([6,5]);ctx.lineWidth=2.5;ctx.strokeStyle=gh;
-  if(gt.t=='cc'){ctx.beginPath();ctx.arc(X(gt.c),Y(gt.c),gt.rad*R,0,7);ctx.stroke()}else if(gt.t=='c'){ctx.beginPath();ctx.arc(O,O,gt.rho*R,0,7);ctx.stroke()}else if(gt.t=='pt'){ctx.beginPath();ctx.arc(X(gt.p),Y(gt.p),14,0,7);ctx.stroke()}else arcs(G.find(g=>g.id==gt.id),3.5,gh,[6,5]);ctx.setLineDash([])}}
-const ghostOf=s=>s.ghost||(s.t=='sel'?{t:'sel',id:s.id}:s.t=='circ'?{t:'c',rho:s.rho}:s.t=='cc'?{t:'cc',c:s.c,rad:s.rad}:{t:'pt',p:s.p});
+/* ---------- Cas pratiques (abaque libre) ---------- */
+const c0=3e8,uo=l=>l>=1?['m',1]:['cm',100],lamOf=(fq,er)=>c0/(fq*Math.sqrt(er)),tv=(v,a,r)=>Math.max(a,r*Math.abs(v));
+const Zs=Z=>`${f(Z[0],0)} ${Z[1]<0?'−':'+'} j${f(Math.abs(Z[1]),0)} Ω`;
+function stubSol(zn){const p=gam(zn),P0=neg(p),rho=C.abs(p),pl=C.arg(P0),ac=Math.acos(rho)*180/Math.PI;
+ return[ac,-ac].map(a=>{const P1=C.pol(rho,a),B=-zof(P1)[1];return{d:(((pl-a)%360)+360)%360/720,B,ls:Math.atan2(1,-B)/(2*Math.PI),lo:((Math.atan(B)+Math.PI)%Math.PI)/(2*Math.PI)}}).sort((a,b)=>a.d-b.d)}
+function dsSol(zn,d1,s){const y=C.div([1,0],zn),y0=zof(C.mul(gam(y),C.pol(1,-720*d1))),g=y0[0],I=ix([g/(1+g),0],1/(1+g),C.pol(.5,720*s),.5),gmax=1/Math.pow(Math.sin(2*Math.PI*s),2);
+ const sols=(I||[]).map(Q=>{const B1=zof(Q)[1]-y0[1],B2=-zof(C.mul(Q,C.pol(1,-720*s)))[1];return{B1,B2,l1:L6(B1),l2:L6(B2)}}).sort((a,b)=>a.l1-b.l1);return{y0,g,gmax,sols}}
+const dsLines=(zn,d1,s,lam)=>{const r=dsSol(zn,d1/lam,s/lam),y=C.div([1,0],zn),o=[`z_r = ${zs(zn)} ⇒ y_r = 1/z_r = ${zs(y)} (point symétrique).`,`Avance de d₁ = ${f(d1/lam,3)} λ vers le générateur : rotation de ${f(720*d1/lam,1)}° (sens horaire) sur le cercle |Γ| ⇒ y₀ = ${zs(r.y0)}.`,`Cercle auxiliaire : cercle g = 1 tourné de ${f(720*s/lam,1)}° (sens anti-horaire), car l’espacement vaut ${f(s/lam,3)} λ. On le coupe avec le cercle g = ${f(r.g)} passant par y₀.`];
+ if(!r.sols.length)o.push(`Pas d’intersection : g₀ = ${f(r.g)} dépasse g_max = 1/sin²(2π·s/λ) = ${f(r.gmax)} ⇒ adaptation impossible avec ce double stub (zone interdite).`);
+ else{const q=r.sols[0];o.push(`Solution retenue (l₁ la plus courte) : stub 1 apporte B₁ = ${f(q.B1)} ⇒ l₁ = atan2(1, −B₁)/2π = ${f(q.l1,3)} λ = ${f(q.l1*lam*100,1)} cm.`,`On tourne ensuite de ${f(720*s/lam,1)}° vers le générateur : on arrive sur g = 1 avec une susceptance à annuler ⇒ B₂ = ${f(q.B2)}, l₂ = ${f(q.l2,3)} λ = ${f(q.l2*lam*100,1)} cm.`)}return o};
+const stubEx=(Z,lam,mode,note)=>{const zn=[Z[0]/50,Z[1]/50],all=stubSol(zn),s=mode=='l'?all.slice().sort((a,b)=>a.ls-b.ls)[0]:all[0],[u,k]=uo(lam),M=lam*k,y=C.div([1,0],zn),rho=C.abs(gam(zn)),tD=v=>tv(v,.012*M,.05),b1=-s.B,fm=v=>`${f(v,3)} λ = ${f(v*M,2)} ${u}`;
+ const intro=`Une ligne parfaite R₀ = 50 Ω est terminée par Z_r = ${Zs(Z)}. ${note}<br>Pour adapter la charge, on utilise un stub en court-circuit (ligne parfaite R₀) de longueur l₁, connecté à la distance d₁ en amont de la charge. ${mode=='l'?'Détermine l₁ minimum et la distance d₁ correspondante.':'Détermine d₁ minimum et l₁ correspondante, puis refais l’étude avec un stub en circuit ouvert.'}`;
+ const h1=['Normalise Z_r, passe en admittance (point symétrique de z), trace le cercle |Γ| et tourne vers le générateur (sens horaire) jusqu’au cercle g = 1.',`Lis la distance parcourue sur l’échelle λ puis multiplie par λ. Stub : pars de y = ∞ (court-circuit) et tourne vers le générateur jusqu’à b = −b₁.`,`d₁ ≈ ${fm(s.d)} ; l₁ ≈ ${fm(s.ls)}.`];
+ const st=[];if(mode=='l')st.push(RD('Calcule la longueur d’onde dans la ligne (en cm).',[F('λ (cm)',lam*100,tv(lam*100,.3,.02))],0,['λ = v/f avec v = c/√εr.','λ = 3·10⁸ / (f·√εr).',`λ ≈ ${f(lam*100,2)} cm.`]));
+ st.push(RD(mode=='l'?`Stub en court-circuit : donne l₁ minimum et d₁ (en ${u}).`:`Stub en court-circuit : donne d₁ minimum et l₁ (en ${u}).`,mode=='l'?[F(`l₁ (${u})`,s.ls*M,tD(s.ls*M)),F(`d₁ (${u})`,s.d*M,tD(s.d*M))]:[F(`d₁ (${u})`,s.d*M,tD(s.d*M)),F(`l₁ (${u})`,s.ls*M,tD(s.ls*M))],0,h1));
+ if(mode!='l')st.push(RD(`Stub en circuit ouvert : donne d₁ et l₁ (en ${u}).`,[F(`d₁ (${u})`,s.d*M,tD(s.d*M)),F(`l₁ (${u})`,s.lo*M,tD(s.lo*M))],0,['Le point d’intersection est le même : d₁ ne change pas.','Un stub ouvert part de y = 0 (point de gauche) au lieu de y = ∞ : l₁ change de λ/4 (modulo λ/2).',`d₁ ≈ ${fm(s.d)} ; l₁ ≈ ${fm(s.lo)}.`]));
+ const sol=[`z_r = Z_r/R₀ = ${zs(zn)} ; y_r = 1/z_r = ${zs(y)} (point symétrique de z_r par rapport au centre). |Γ| = ${f(rho)}.`,`En tournant vers le générateur sur le cercle |Γ|, on atteint le cercle g = 1 en y₁ = ${zs([1,b1])} après d₁ = ${fm(s.d)}.`,`Il faut apporter −jb₁ = ${zs([0,s.B])}. Stub court-circuité : y_s = −j·cot(βl) ⇒ l₁ = atan2(1, −B)/2π = ${fm(s.ls)} (de y = ∞ jusqu’à b = ${f(s.B)}).`];
+ if(mode!='l')sol.push(`Stub ouvert : y_s = j·tan(βl) ⇒ l₁ = ${fm(s.lo)} ; d₁ est inchangé (l₁ diffère de λ/4 modulo λ/2).`);else sol.push(`Autre solution : d₁ = ${fm(all.find(a=>a!==s).d)}, l₁ = ${fm(all.find(a=>a!==s).ls)} (plus longue : on retient la plus courte).`);
+ return{free:1,intro,steps:st,sol}};
+const dsEx=(Z,lam,d1,s1,s2)=>{const zn=[Z[0]/50,Z[1]/50],a=dsSol(zn,d1/lam,s1/lam),b=dsSol(zn,d1/lam,s2/lam),q=a.sols[0],tl2=v=>tv(v,.012*lam*100,.05),cm=v=>v*lam*100;
+ const intro=`Une ligne parfaite R₀ = 50 Ω, λ = ${f(lam*100,1)} cm, est terminée par Z_r = ${Zs(Z)}. Adaptation par double stub en court-circuit (lignes R₀) en parallèle : la 1ʳᵉ dérivation est à d₁ = ${f(d1*100,1)} cm de la charge, la 2ᵉ est espacée de ${f(s1*100,2)} cm. Donne l₁ (la plus proche de la charge) et l₂ en retenant la solution où l₁ est la plus courte. Que deviennent ces résultats si l’espacement vaut ${f(s2*100,1)} cm ?`;
+ const st=[RD(`Espacement ${f(s1*100,2)} cm : donne l₁ et l₂ (en cm).`,[F('l₁ (cm)',cm(q.l1),tl2(cm(q.l1))),F('l₂ (cm)',cm(q.l2),tl2(cm(q.l2)))],0,['Ramène la charge dans le plan du 1ᵉʳ stub (rotation d₁), puis trace le cercle g = 1 tourné de l’espacement (sens anti-horaire).','Le 1ᵉʳ stub déplace le point sur son cercle g jusqu’au cercle auxiliaire ; tourne de l’espacement vers le générateur pour arriver sur g = 1 ; le 2ᵉ stub annule la susceptance restante.',`l₁ ≈ ${f(cm(q.l1),1)} cm ; l₂ ≈ ${f(cm(q.l2),1)} cm.`])];
+ const q2=b.sols[0];st.push(RD(`Espacement ${f(s2*100,1)} cm : l’adaptation est-elle possible (1 = oui, 0 = non)${q2?' ? Si oui, donne l₁ et l₂ (cm).':' ?'}`,[F('adaptable (1/0)',q2?1:0,.1)].concat(q2?[F('l₁ (cm)',cm(q2.l1),tl2(cm(q2.l1))),F('l₂ (cm)',cm(q2.l2),tl2(cm(q2.l2)))]:[]),0,['Refais le cercle auxiliaire avec le nouvel espacement et regarde s’il coupe le cercle g de la charge ramenée.','Si les deux cercles ne se coupent pas, c’est la zone interdite (g > 1/sin²(2π s/λ)).',q2?`l₁ ≈ ${f(cm(q2.l1),1)} cm ; l₂ ≈ ${f(cm(q2.l2),1)} cm.`:'Les cercles ne se coupent pas : adaptation impossible.']));
+ return{free:1,intro,steps:st,sol:[...dsLines(zn,d1,s1,lam),'<b>Nouvel espacement :</b>',...dsLines(zn,d1,s2,lam).slice(2)]}};
+const ZL=[[75,50],[30,-20],[100,50],[20,30],[150,-80],[15,0],[10,-40]];
+const pwEx=()=>{const V=pick([3,5,8]),pv=pick([0,30,-45]),I=V/50*pick([.6,.8,1.25,1.6]),pi=pv+pick([-50,-25,0,25,50,70]),Vc=C.pol(V,pv),Ic=C.pol(I,pi),P=.5*V*I*Math.cos((pv-pi)*Math.PI/180)*1000,k=Math.sqrt(1000)/(2*Math.sqrt(50)),a=C.abs(C.mul(C.add(Vc,C.mul([50,0],Ic)),[k,0])),b=C.abs(C.mul(C.sub(Vc,C.mul([50,0],Ic)),[k,0])),Pi=a*a/2,Pr=b*b/2;
+ return{free:1,intro:`Un dispositif est relié à un générateur par une ligne R₀ = 50 Ω. Au plan de référence 1, on mesure v₁(t) = ${V}·cos(ωt + ${pv}°) V et i₁(t) = ${f(I*1000,1)}·cos(ωt + ${pi}°) mA (amplitudes crêtes). On définit a₁ = (V₁ + R₀I₁)/(2√R₀) et b₁ = (V₁ − R₀I₁)/(2√R₀).`,steps:[
+ RD('Donne la puissance moyenne P absorbée par le dispositif (mW).',[F('P (mW)',P,tv(P,.05,.015))],0,['P = ½·Re(V₁·I₁*) avec V₁ et I₁ les amplitudes complexes crêtes.','P = ½·V·I·cos(φ_v − φ_i).',`P ≈ ${f(P,2)} mW.`]),
+ RD('Calcule les modules |a₁| et |b₁| (en √mW).',[F('|a₁| (√mW)',a,tv(a,.02,.015)),F('|b₁| (√mW)',b,tv(b,.02,.015))],0,['Utilise les amplitudes complexes : V₁ = V∠φ_v, I₁ = I∠φ_i, avec R₀ = 50 Ω.','a₁ = (V₁ + R₀I₁)/(2√R₀) ; b₁ = (V₁ − R₀I₁)/(2√R₀) (en √W, convertis ensuite).',`|a₁| ≈ ${f(a,3)} ; |b₁| ≈ ${f(b,3)} √mW.`]),
+ RD('Donne la puissance incidente, la puissance réfléchie (mW) et vérifie P = P_inc − P_réf.',[F('P_inc (mW)',Pi,tv(Pi,.05,.015)),F('P_réf (mW)',Pr,tv(Pr,.05,.02))],0,['P_inc = ½|a₁|² et P_réf = ½|b₁|².','Reprends les modules du calcul précédent.',`P_inc ≈ ${f(Pi,2)} mW ; P_réf ≈ ${f(Pr,2)} mW.`])],
+ sol:['Puissance instantanée : p(t) = v₁(t)·i₁(t) = ½VI[cos(φ_v−φ_i) + cos(2ωt+φ_v+φ_i)].','Puissance moyenne : P = ½VI·cos(φ_v−φ_i) = ½Re(V₁I₁*).',`Ici P = ½·${V}·${f(I,4)}·cos(${pv-pi}°) = ${f(P,2)} mW.`,'En ondes : P = ½(|a₁|² − |b₁|²) ⇒ P_inc = ½|a₁|², P_réf = ½|b₁|².',`|a₁| = ${f(a,3)} √mW, |b₁| = ${f(b,3)} √mW ⇒ P_inc = ${f(Pi,2)} mW, P_réf = ${f(Pr,2)} mW, et P_inc − P_réf = ${f(Pi-Pr,2)} mW ✓.`]}};
+const atEx=()=>{const A=pick([3,6,10,15,20,30]),K=Math.pow(10,-A/20),R1=50*(1-K)/(1+K),R2=100*K/(1-K*K),Pd=1-K*K;
+ return{free:1,intro:`Atténuateur en T (R₁ en série à l’entrée, R₂ en parallèle, R₃ = R₁ en série à la sortie) pour des lignes R₀ = 50 Ω, de taille très petite devant λ. On veut une atténuation de ${A} dB, atténuateur adapté.`,steps:[
+ RD('Les S_ij étant réels : donne S₁₁ et |S₂₁| (valeur linéaire).',[F('S₁₁',0,.03),F('|S₂₁|',K,tv(K,.004,.02))],0,['Adapté ⇒ S₁₁ = S₂₂ = 0.','Atténuation A (dB) = −20·log₁₀|S₂₁|.',`|S₂₁| = 10^(−${A}/20) ≈ ${f(K,4)}.`]),
+ RD('Donne les valeurs de R₁ et R₂ (Ω).',[F('R₁ (Ω)',R1,tv(R1,.3,.02)),F('R₂ (Ω)',R2,tv(R2,.2,.03))],0,['Adaptation : Z_in = R₁ + R₂‖(R₁ + R₀) = R₀, et S₂₁ = K.','R₁ = R₀(1 − K)/(1 + K) ; R₂ = 2R₀K/(1 − K²).',`R₁ ≈ ${f(R1,2)} Ω ; R₂ ≈ ${f(R2,2)} Ω.`]),
+ RD('Pour 1 W à l’entrée, quelle puissance (W) est dissipée dans l’atténuateur ?',[F('P_dissipée (W)',Pd,tv(Pd,.01,.015))],0,['L’atténuateur est adapté : toute la puissance entre.','P_sortie = |S₂₁|²·P_entrée.',`P_diss = 1 − ${f(K*K,4)} ≈ ${f(Pd,3)} W.`])],
+ sol:['Qualification : S₁₂ = S₂₁ (réciproque), S₁₁ = S₂₂ (symétrique), S₁₁ = 0 (adapté), |S₂₁| < 1 (passif dissipatif).','Pour S₁₁ = 0 : R₀ = R₁ + R₂(R₁+R₀)/(R₁+R₂+R₀) ; avec S₂₁ = K on obtient R₁ = R₀(1−K)/(1+K), R₂ = 2R₀K/(1−K²).',`K = 10^(−${A}/20) = ${f(K,4)} ⇒ R₁ = ${f(R1,2)} Ω, R₂ = ${f(R2,2)} Ω.`,`Puissance dissipée pour 1 W : 1 − K² = ${f(Pd,3)} W.`]}};
+const lcEx=()=>{const fq=pick([13.56,27,50,144]),w=2*Math.PI*fq*1e6,L=50/w*1e9,Cc=1/(50*w)*1e12;
+ return{free:1,intro:`Quadripôle en T alimenté par une ligne R₀ = 50 Ω à f = ${f(fq,2)} MHz : Z₁ = jL₁ω et Z₂ = jL₂ω en série, Z₃ = 1/(jC₃ω) en parallèle ; les trois impédances ont pour module R₀.`,steps:[
+ RD('Calcule L (nH) et C (pF).',[F('L (nH)',L,tv(L,.3,.01)),F('C (pF)',Cc,tv(Cc,.3,.01))],0,['|Z| = R₀ ⇒ Lω = R₀ et 1/(Cω) = R₀.','ω = 2πf ; L = R₀/ω ; C = 1/(R₀ω).',`L ≈ ${f(L,2)} nH ; C ≈ ${f(Cc,2)} pF.`]),
+ RD('Donne les parties imaginaires des impédances réduites x₁, x₂, x₃.',[F('x₁',1,.03),F('x₂',1,.03),F('x₃',-1,.03)],0,['z = Z/R₀.','Une bobine est en +j, un condensateur en −j.','z₁ = z₂ = +j et z₃ = −j.']),
+ RD('Calcule |S₁₁|, |S₂₁| et arg S₂₁ (°).',[F('|S₁₁|',0,.03),F('|S₂₁|',1,.03),F('arg S₂₁ (°)',-90,3)],0,['Écris la matrice ABCD réduite : séries [[1, z],[0, 1]] et parallèle [[1, 0],[y, 1]] avec y = 1/z₃ = j.','S₁₁ = (A+B−C−D)/Δ ; S₂₁ = 2/Δ avec Δ = A+B+C+D.','ABCD = [[0, j],[j, 0]] ⇒ Δ = 2j ⇒ S₁₁ = 0 ; S₂₁ = −j.'])],
+ sol:[`ω = 2π·${f(fq,2)}·10⁶ ⇒ L = R₀/ω = ${f(L,2)} nH, C = 1/(R₀ω) = ${f(Cc,2)} pF.`,'z₁ = z₂ = j, z₃ = −j (donc y₃ = 1/z₃ = j).','ABCD = [[1,j],[0,1]]·[[1,0],[j,1]]·[[1,j],[0,1]] = [[0,j],[j,0]].','Δ = A+B+C+D = 2j ⇒ S₁₁ = (A+B−C−D)/Δ = 0 ; S₂₁ = 2/Δ = −j ; S₂₂ = 0.','Le quadripôle est adapté et équivaut à une ligne R₀ de longueur λ/4 (déphasage −90°).']}};
+const antEx=()=>{const Z=pick([[40,30],[75,-25],[30,-40],[100,50]]),P=pick([5,10,50,100]),G=C.abs(gam([Z[0]/50,Z[1]/50])),ros=(1+G)/(1-G),RL=-20*Math.log10(G),Pa=P*(1-G*G);
+ return{free:1,intro:`Une antenne d’impédance Z_ant = ${Zs(Z)} est alimentée par un émetteur ${P} W à travers un câble coaxial 50 Ω supposé sans pertes.`,steps:[
+ RD('Donne |Γ| et le ROS.',[F('|Γ|',G,.04),F('ROS',ros,tv(ros,.1,.06))],0,['Normalise Z_ant par 50 Ω et repère le point.','|Γ| = distance au centre (bord = 1) ; ROS = r à l’intersection du cercle |Γ| avec l’axe, à droite.',`|Γ| ≈ ${f(G,3)} ; ROS ≈ ${f(ros,2)}.`]),
+ RD('Donne les pertes de retour RL (dB) et la puissance réellement transmise à l’antenne (W).',[F('RL (dB)',RL,tv(RL,.6,.06)),F('P_antenne (W)',Pa,tv(Pa,.05,.03))],0,['RL = −20·log₁₀|Γ| ; P_réfléchie = |Γ|²·P.','P_antenne = P·(1 − |Γ|²).',`RL ≈ ${f(RL,1)} dB ; P_ant ≈ ${f(Pa,2)} W.`])],
+ sol:[`z = ${zs([Z[0]/50,Z[1]/50])} ⇒ |Γ| = ${f(G,3)}, ROS = (1+|Γ|)/(1−|Γ|) = ${f(ros,2)}.`,`RL = −20·log₁₀(${f(G,3)}) = ${f(RL,1)} dB.`,`P_réfléchie = |Γ|²·${P} = ${f(G*G*P,2)} W ⇒ P_antenne = ${f(Pa,2)} W.`]}};
+const fenEx=()=>{const fq=pick([300,433,900]),er=pick([2.25,1.8]),lam=lamOf(fq*1e6,er),ros=pick([2,2.5,3,4]),rho=(ros-1)/(ros+1),dcm=Math.round(lam*100*pick([.05,.1,.15,.2,.3,.4])*2)/2,dl=dcm/lam/100,GL=C.mul([-rho,0],C.pol(1,720*dl)),z=zof(GL);
+ return{free:1,intro:`Mesures sur une ligne fendue 50 Ω (diélectrique εr = ${er}) à f = ${fq} MHz : ROS = ${f(ros,1)} et le 1ᵉʳ minimum de tension se trouve à ${f(dcm,1)} cm de la charge (côté générateur). Détermine la charge inconnue.`,steps:[
+ RD('Calcule la longueur d’onde dans la ligne (cm).',[F('λ (cm)',lam*100,tv(lam*100,.3,.02))],0,['λ = c/(f·√εr).','Attention aux unités (MHz).',`λ ≈ ${f(lam*100,1)} cm.`]),
+ RD('Donne la charge normalisée z_L = r + jx.',[F('r',z[0],tl(z[0])),F('x',z[1],tl(z[1]))],0,['Au minimum de tension z = 1/ROS (point de gauche du cercle |Γ| = (ROS−1)/(ROS+1)).','Depuis ce point, recule vers la charge (sens anti-horaire) de d/λ × 720°.',`d/λ ≈ ${f(dl,3)} ; z_L ≈ ${zs(z)}.`]),
+ RD('Donne Z_L en ohms.',[F('R (Ω)',50*z[0],tv(50*z[0],3,.07)),F('X (Ω)',50*z[1],tv(50*z[1],3,.07))],0,['Z = z × 50 Ω.','R = 50·r ; X = 50·x.',`Z_L ≈ ${Zs([50*z[0],50*z[1]])}.`])],
+ sol:[`λ = c/(f√εr) = ${f(lam*100,1)} cm ⇒ d/λ = ${f(dl,3)}.`,`|Γ| = (ROS−1)/(ROS+1) = ${f(rho,3)}. Au minimum, Γ = −${f(rho,3)} (z = 1/ROS = ${f(1/ros,2)}).`,`On recule de d vers la charge : rotation de ${f(720*dl,1)}° en sens anti-horaire ⇒ Γ_L = ${f(C.abs(GL),3)}∠${f(C.arg(GL),1)}°.`,`z_L = ${zs(z)} ⇒ Z_L = ${Zs([50*z[0],50*z[1]])}.`]}};
+const lmEx=()=>{const Z=pick([[200,100],[150,-80],[100,50],[300,-100]]),fq=pick([27,100,145,433]),w=2*Math.PI*fq*1e6,zn=[Z[0]/50,Z[1]/50],yL=C.div([1,0],zn),g=yL[0],I=ix([-g/(1+g),0],1/(1+g),[.5,0],.5),
+ so=I.map(P=>{const zz=zof(P),yy=C.div([1,0],zz);return{B:yy[1]-yL[1],X:-zz[1]}}).sort((a,b)=>Math.abs(a.B)-Math.abs(b.B))[0],
+ sh=so.B>0?['C',so.B/(50*w)*1e12,'pF']:['L',50/(-so.B*w)*1e9,'nH'],se=so.X>0?['L',so.X*50/w*1e9,'nH']:['C',1/(-so.X*50*w)*1e12,'pF'];
+ return{free:1,intro:`Adapte une charge Z_L = ${Zs(Z)} à une ligne 50 Ω à ${fq} MHz avec une cellule en L : un élément réactif en parallèle sur la charge, puis un élément réactif en série (côté générateur). Retiens la solution où |B| est la plus petite.`,steps:[
+ RD('Donne la susceptance normalisée B de l’élément parallèle et la réactance normalisée X de l’élément série.',[F('B',so.B,tv(so.B,.08,.07)),F('X',so.X,tv(so.X,.08,.07))],0,['Passe en admittance : le parallèle déplace le point sur le cercle g constant jusqu’à ce que z (point opposé) soit sur le cercle r = 1.','Puis la réactance série ramène le point sur le centre : X = −x.',`B ≈ ${f(so.B)} ; X ≈ ${f(so.X)}.`]),
+ RD(`Donne la valeur de l’élément parallèle (${sh[0]==='C'?'condensateur en pF':'bobine en nH'}) et de l’élément série (${se[0]==='C'?'condensateur en pF':'bobine en nH'}).`,[F(`${sh[0]} parallèle (${sh[2]})`,sh[1],tv(sh[1],.5,.09)),F(`${se[0]} série (${se[2]})`,se[1],tv(se[1],.5,.09))],0,['B>0 : condensateur C = B/(R₀ω) ; B<0 : bobine L = R₀/(|B|ω).','X>0 : bobine L = X·R₀/ω ; X<0 : condensateur C = 1/(|X|·R₀·ω).',`parallèle ≈ ${f(sh[1],1)} ${sh[2]} ; série ≈ ${f(se[1],1)} ${se[2]}.`])],
+ sol:[`z_L = ${zs(zn)} ⇒ y_L = ${zs(yL)}. Le parallèle ajoute jB sur le cercle g = ${f(g)}.`,`On cherche l’intersection de ce cercle avec le cercle r = 1 (impédance) : B = ${f(so.B)} ⇒ y = ${zs([g,yL[1]+so.B])}, soit z = 1 + j${f(-so.X)}.`,`La série annule la partie imaginaire : X = ${f(so.X)}.`,`ω = 2π·${fq}·10⁶ ⇒ élément parallèle = ${f(sh[1],1)} ${sh[2]} (${sh[0]==='C'?'condensateur':'bobine'}), élément série = ${f(se[1],1)} ${se[2]} (${se[0]==='C'?'condensateur':'bobine'}).`]}};
+const indEx=()=>{const fq=pick([100,433,900]),er=pick([2.25,1.5]),lam=lamOf(fq*1e6,er),Ln=pick([8,12,20,30]),X=2*Math.PI*fq*1e6*Ln*1e-9,xn=X/50,l=Math.atan(xn)/(2*Math.PI);
+ return{free:1,intro:`On veut réaliser une inductance de ${Ln} nH à ${fq} MHz avec un tronçon de câble 50 Ω (εr = ${er}) terminé par un court-circuit.`,steps:[
+ RD('Calcule λ dans le câble (cm) et la réactance X (Ω) de l’inductance.',[F('λ (cm)',lam*100,tv(lam*100,.3,.02)),F('X (Ω)',X,tv(X,.3,.02))],0,['λ = c/(f√εr) ; X = Lω.','Attention aux unités (nH, MHz).',`λ ≈ ${f(lam*100,1)} cm ; X ≈ ${f(X,1)} Ω.`]),
+ RD('Quelle longueur de câble (cm) faut-il ?',[F('l (cm)',l*lam*100,tv(l*lam*100,.1,.05))],0,['Normalise : x = X/50. Pars du court-circuit (z = 0) et tourne vers le générateur sur le bord jusqu’à l’arc x.','l = (angle parcouru / 720°)·λ.',`x ≈ ${f(xn)} ⇒ l ≈ ${f(l,3)} λ ≈ ${f(l*lam*100,2)} cm.`])],
+ sol:[`λ = c/(f√εr) = ${f(lam*100,1)} cm ; X = Lω = ${f(X,1)} Ω ⇒ x = ${f(xn)}.`,`Court-circuit : z_in = j·tan(βl) ⇒ l = atan(x)/2π = ${f(l,3)} λ = ${f(l*lam*100,2)} cm.`,'Sur l’abaque : départ au point z = 0 (gauche), rotation horaire sur le bord jusqu’à l’arc x lu, puis lecture de la distance sur l’échelle λ.']}};
+const qwEx=()=>{const Z=pick([[100,60],[25,-30],[150,-90],[30,40]]),fq=pick([150,433,900]),er=2.25,lam=lamOf(fq*1e6,er),p=gam([Z[0]/50,Z[1]/50]),th=C.arg(p),rho=C.abs(p),ros=(1+rho)/(1-rho),am=th>0?th:th+180,R=th>0?50*ros:50/ros,d=am/720*lam*100,Zc=Math.sqrt(50*R),lq=lam*25;
+ return{free:1,intro:`Adapte Z_L = ${Zs(Z)} à une ligne 50 Ω (εr = ${er}, f = ${fq} MHz) : on intercale un tronçon de ligne R₀ jusqu’au premier point où l’impédance est réelle, puis un transformateur λ/4 d’impédance caractéristique Z_c.`,steps:[
+ RD('Donne la distance d (cm) du premier point d’impédance réelle et la valeur de cette résistance R (Ω).',[F('d (cm)',d,tv(d,.3,.05)),F('R (Ω)',R,tv(R,2,.06))],0,['Calcule λ puis trace le cercle |Γ| : l’impédance est réelle sur l’axe horizontal.','Tourne vers le générateur (horaire) jusqu’au premier croisement de l’axe : à droite R = 50·ROS, à gauche R = 50/ROS.',`d ≈ ${f(d,1)} cm ; R ≈ ${f(R,1)} Ω.`]),
+ RD('Donne Z_c (Ω) et la longueur physique du transformateur λ/4 (cm).',[F('Z_c (Ω)',Zc,tv(Zc,1,.05)),F('l (cm)',lq,tv(lq,.3,.03))],0,['Un transformateur λ/4 adapte R à 50 Ω si Z_c = √(R₀·R).','Longueur λ/4 avec λ = c/(f√εr).',`Z_c ≈ ${f(Zc,1)} Ω ; l ≈ ${f(lq,1)} cm.`])],
+ sol:[`λ = c/(f√εr) = ${f(lam*100,1)} cm. z_L = ${zs([Z[0]/50,Z[1]/50])} ⇒ |Γ| = ${f(rho,3)}, ROS = ${f(ros,2)}.`,`Rotation de ${f(am,1)}° vers le générateur ⇒ d = ${f(d,1)} cm, point sur l’axe (${th>0?'maximum de tension : R = 50·ROS':'minimum de tension : R = 50/ROS'}) ⇒ R = ${f(R,1)} Ω.`,`Z_c = √(50·${f(R,1)}) = ${f(Zc,1)} Ω ; l = λ/4 = ${f(lq,1)} cm.`]}};
+EX.push(
+{id:7,free:1,name:'Stub simple en pratique',lv:'Cas pratique',d:'Énoncés du TD2 (stub court-circuit / ouvert) et variantes.',V:[
+ {n:'TD2 Ex.1 (Zr = 100 + j50)',mk:()=>stubEx([100,50],2,'d','Elle transmet une onde de longueur d’onde égale à 2 m.')},
+ {n:'TD2 Ex.2 (15 Ω, polyéthylène)',mk:()=>stubEx([15,0],lamOf(2e9,2.25),'l','Le diélectrique est du polyéthylène (εr = 2,25) et la fréquence vaut f = 2 GHz.')},
+ {n:'Variante (λ donné)',mk:()=>{const l=pick([1,1.5,2,3]);return stubEx(pick(ZL.slice(0,6)),l,'d',`Longueur d’onde : ${f(l,1)} m.`)}},
+ {n:'Variante (f et εr)',mk:()=>{const fq=pick([.9,1.8,2.4,5]),er=pick([2.25,2.1,2.5]);return stubEx(pick(ZL.slice(0,6)),lamOf(fq*1e9,er),'l',`Diélectrique εr = ${er}, fréquence f = ${fq} GHz.`)}}]},
+{id:8,free:1,name:'Double stub en pratique',lv:'Cas pratique',d:'Énoncé du TD2 Ex.3 et variantes avec espacements différents.',V:[
+ {n:'TD2 Ex.3 (10 − j40 Ω)',mk:()=>dsEx([10,-40],.5,.1,.0625,.2)},
+ {n:'Variante aléatoire',mk(){for(;;){const lam=pick([.3,.5,1]),Z=pick(ZL),d1=lam*pick([.1,.15,.2,.3]),s=lam*pick([.125,.375,.15]),s2=lam*pick([.2,.4,.45]);if(dsSol([Z[0]/50,Z[1]/50],d1/lam,s/lam).sols.length)return dsEx(Z,lam,d1,s,s2)}}}]},
+{id:9,free:1,name:'Calculs hors abaque (TD1)',lv:'Cas pratique',d:'Puissance et ondes a/b, atténuateur en T, quadripôle LC et paramètres S.',V:[{n:'Ex.1 Puissance, a₁ et b₁',mk:pwEx},{n:'Ex.2 Atténuateur en T',mk:atEx},{n:'Ex.3 Quadripôle LC, S',mk:lcEx}]},
+{id:10,free:1,name:'Cas pratiques inventés',lv:'Cas pratique',d:'Antenne, ligne fendue, cellule LC, inductance par stub, transformateur λ/4.',V:[{n:'Antenne et ROS',mk:antEx},{n:'Ligne fendue',mk:fenEx},{n:'Cellule d’adaptation LC',mk:lmEx},{n:'Inductance par court-circuit',mk:indEx},{n:'Transformateur λ/4',mk:qwEx}]});
 
-/* ---------- Logique du jeu ---------- */
-let S={ex:null,inst:null,i:0,pts:0,hl:0,wr:0,dr:{pts:[],cs:[],sel:[],cc:[]},sc:[],cl:[],p1:null,tool:'sel',flash:null};
-const cur=()=>S.inst&&S.inst.steps[S.i];
-const total=()=>Object.values(best).reduce((a,b)=>a+b,0);
-function start(id,vi){const e=EX.find(x=>x.id==id),k=vi==null?Math.floor(Math.random()*e.V.length):vi,v=e.V[k];S={ex:e,vi:k,vn:v.n,inst:v.mk(),i:0,pts:0,hl:0,wr:0,dr:{pts:[],cs:[],sel:[],cc:[]},sc:[],cl:[],p1:null,tool:'sel',flash:null};render();draw()}
-function menu(){S.ex=null;S.inst=null;S.dr={pts:[],cs:[],sel:[],cc:[]};S.sc=[];S.cl=[];S.p1=null;render();draw()}
+/* ---------- Double stub série & lignes avec pertes ---------- */
+const Ls=x=>((Math.atan(x)+Math.PI)%Math.PI)/(2*Math.PI);
+const dsSolS=(zn,d1,s)=>{const r=dsSol(C.div([1,0],zn),d1,s);r.sols.sort((a,b)=>Ls(a.B1)-Ls(b.B1));return r};
+const dsSLines=(zn,d1,s,lam)=>{const r=dsSolS(zn,d1/lam,s/lam),o=[`z_r = ${zs(zn)} (on travaille en impédances : pas de symétrie).`,`Avance de d₁ = ${f(d1/lam,3)} λ vers le générateur : rotation de ${f(720*d1/lam,1)}° (sens horaire) ⇒ z₀ = ${zs(r.y0)}.`,`Cercle auxiliaire : cercle r = 1 tourné de ${f(720*s/lam,1)}° (anti-horaire), car l’espacement vaut ${f(s/lam,3)} λ. On le coupe avec le cercle r = ${f(r.g)} passant par z₀.`];
+ if(!r.sols.length)o.push(`Pas d’intersection : r₀ = ${f(r.g)} dépasse r_max = 1/sin²(2π·s/λ) = ${f(r.gmax)} ⇒ adaptation impossible (zone interdite).`);
+ else{const q=r.sols[0],l1=Ls(q.B1),l2=Ls(q.B2);o.push(`Solution retenue (l₁ la plus courte) : le stub série 1 apporte X₁ = ${f(q.B1)} ⇒ l₁ = atan(X₁)/2π = ${f(l1,3)} λ = ${f(l1*lam*100,1)} cm.`,`Rotation de ${f(720*s/lam,1)}° vers le générateur : on arrive sur r = 1 ; il reste à annuler X₂ = ${f(q.B2)} ⇒ l₂ = ${f(l2,3)} λ = ${f(l2*lam*100,1)} cm.`)}return o};
+const dsExS=(Z,lam,d1,s1,s2)=>{const zn=[Z[0]/50,Z[1]/50],a=dsSolS(zn,d1/lam,s1/lam),b=dsSolS(zn,d1/lam,s2/lam),q=a.sols[0],q2=b.sols[0],tl2=v=>tv(v,.012*lam*100,.05),cm=v=>v*lam*100;
+ const intro=`Une ligne parfaite R₀ = 50 Ω, λ = ${f(lam*100,1)} cm, est terminée par Z_r = ${Zs(Z)}. Adaptation par double stub en court-circuit placés en <b>série</b> : le 1ᵉʳ est à d₁ = ${f(d1*100,1)} cm de la charge, le 2ᵉ est espacé de ${f(s1*100,2)} cm. Donne l₁ (le plus proche de la charge) et l₂ en retenant la solution où l₁ est la plus courte. Que deviennent ces résultats si l’espacement vaut ${f(s2*100,1)} cm ?`;
+ const st=[RD(`Espacement ${f(s1*100,2)} cm : donne l₁ et l₂ (en cm).`,[F('l₁ (cm)',cm(Ls(q.B1)),tl2(cm(Ls(q.B1)))),F('l₂ (cm)',cm(Ls(q.B2)),tl2(cm(Ls(q.B2))))],0,['Ramène la charge dans le plan du 1ᵉʳ stub (rotation d₁), sans passer en admittance, puis trace le cercle r = 1 tourné de l’espacement (sens anti-horaire).','Le stub série 1 déplace le point sur son cercle r jusqu’au cercle auxiliaire ; tourne de l’espacement vers le générateur pour arriver sur r = 1 ; le stub 2 annule la réactance restante. Stub court-circuité en série : z = j·tan(βl), départ du point z = 0 (gauche).',`l₁ ≈ ${f(cm(Ls(q.B1)),1)} cm ; l₂ ≈ ${f(cm(Ls(q.B2)),1)} cm.`])];
+ st.push(RD(`Espacement ${f(s2*100,1)} cm : l’adaptation est-elle possible (1 = oui, 0 = non)${q2?' ? Si oui, donne l₁ et l₂ (cm).':' ?'}`,[F('adaptable (1/0)',q2?1:0,.1)].concat(q2?[F('l₁ (cm)',cm(Ls(q2.B1)),tl2(cm(Ls(q2.B1)))),F('l₂ (cm)',cm(Ls(q2.B2)),tl2(cm(Ls(q2.B2))))]:[]),0,['Refais le cercle auxiliaire avec le nouvel espacement et regarde s’il coupe le cercle r de la charge ramenée.','Sans intersection : zone interdite (r > 1/sin²(2π s/λ)).',q2?`l₁ ≈ ${f(cm(Ls(q2.B1)),1)} cm ; l₂ ≈ ${f(cm(Ls(q2.B2)),1)} cm.`:'Les cercles ne se coupent pas : adaptation impossible.']));
+ return{free:1,intro,steps:st,sol:[...dsSLines(zn,d1,s1,lam),'<b>Nouvel espacement :</b>',...dsSLines(zn,d1,s2,lam).slice(2)]}};
+const lossEx=()=>{const fq=pick([100,433,900]),lam=lamOf(fq*1e6,2.25),al=pick([.8,1.2,1.6]),Lm=Math.round(lam*(pick([1,2,3])+pick([.1,.15,.2,.3,.35]))*100)/100,A=al*Lm,Z=pick(ZL.slice(0,6)),zn=[Z[0]/50,Z[1]/50],pL=gam(zn),k=Math.pow(10,-A/10),ll=Lm/lam,pin=C.mul(C.mul(pL,[k,0]),C.pol(1,-720*ll)),zi=zof(pin),ri=C.abs(pin),ros=(1+ri)/(1-ri),RL=-20*Math.log10(ri),rl0=-20*Math.log10(C.abs(pL)),ang=((720*ll)%360+360)%360;
+ return{free:1,intro:`Un câble 50 Ω (εr = 2,25, affaiblissement ${f(al,1)} dB/m) de longueur ${f(Lm,2)} m relie un émetteur à f = ${fq} MHz à une charge Z_L = ${Zs(Z)}. Sur l’abaque, un déplacement vers le générateur est une rotation <b>accompagnée d’un rapprochement du centre</b> (spirale) : |Γ| est multiplié par 10^(−A/10), A étant l’affaiblissement aller simple en dB (la rotation d/λ accepte un champ « pertes »).`,steps:[
+ RD('Donne λ (cm), la longueur l/λ du câble et son affaiblissement A (dB).',[F('λ (cm)',lam*100,tv(lam*100,.3,.02)),F('l/λ',ll,tv(ll,.02,.02)),F('A (dB)',A,tv(A,.05,.03))],0,['λ = c/(f√εr) ; l/λ = l/λ ; A = α·l.','Attention aux unités (cm / m).',`λ ≈ ${f(lam*100,1)} cm ; l/λ ≈ ${f(ll,3)} ; A ≈ ${f(A,2)} dB.`]),
+ RD('Donne l’impédance d’entrée normalisée z_in = r + jx.',[F('r',zi[0],tl(zi[0])),F('x',zi[1],tl(zi[1]))],0,['Repère z_L, puis applique la rotation de 720°·(l/λ) (modulo 360°) vers le générateur, avec les pertes A en dB.','|Γ_in| = |Γ_L|·10^(−A/10) : le point se rapproche du centre.',`Rotation ≈ ${f(ang,1)}° ; |Γ_in| ≈ ${f(ri,3)} ; z_in ≈ ${zs(zi)}.`]),
+ RD('Donne le ROS vu à l’entrée et les pertes de retour mesurées à l’entrée (dB).',[F('ROS à l’entrée',ros,tv(ros,.1,.06)),F('RL entrée (dB)',RL,tv(RL,.6,.06))],0,['ROS = r à l’intersection du cercle |Γ_in| avec l’axe (à droite) ; RL = −20·log₁₀|Γ_in|.',`Les pertes de retour augmentent de 2A par rapport à celles de la charge (${f(rl0,1)} dB).`,`ROS ≈ ${f(ros,2)} ; RL ≈ ${f(RL,1)} dB.`])],
+ sol:[`λ = c/(f√εr) = ${f(lam*100,1)} cm ; l/λ = ${f(ll,3)} ; A = ${f(al,1)}·${f(Lm,2)} = ${f(A,2)} dB.`,`Γ_L = ${f(C.abs(pL),3)}∠${f(C.arg(pL),1)}°. Rotation de ${f(720*ll,1)}° ≡ ${f(ang,1)}° (sens horaire) et |Γ| × 10^(−A/10) = × ${f(k,3)}.`,`Γ_in = ${f(ri,3)}∠${f(C.arg(pin),1)}° ⇒ z_in = ${zs(zi)}.`,`ROS_in = ${f(ros,2)} (au lieu de ${f((1+C.abs(pL))/(1-C.abs(pL)),2)} à la charge) ; RL_in = ${f(RL,1)} dB = ${f(rl0,1)} dB + 2A.`]}};
+const loss2Ex=()=>{const A=pick([1,2,3]),rosI=pick([1.3,1.5,2]),rI=(rosI-1)/(rosI+1),rL=rI*Math.pow(10,A/10),rosL=(1+rL)/(1-rL);
+ return{free:1,intro:`Un câble 50 Ω présente un affaiblissement de ${A} dB (aller simple). Un ROS-mètre à l’entrée du câble indique ${f(rosI,1)}. Quelle est la qualité d’adaptation réelle de la charge ?`,steps:[
+ RD('Donne |Γ| mesuré à l’entrée du câble.',[F('|Γ_in|',rI,.03)],0,['Trace le cercle de |Γ| passant par r = ROS sur l’axe.','|Γ| = (ROS − 1)/(ROS + 1) = distance au centre.',`|Γ_in| ≈ ${f(rI,3)}.`]),
+ RD('Donne |Γ_L| à la charge et le ROS à la charge.',[F('|Γ_L|',rL,tv(rL,.03,.05)),F('ROS_L',rosL,tv(rosL,.1,.06))],0,['Vers la charge, le point s’éloigne du centre (spirale inverse) : |Γ_L| = |Γ_in|·10^(A/10).','Les pertes de retour à la charge valent celles de l’entrée moins 2A.',`|Γ_L| ≈ ${f(rL,3)} ; ROS_L ≈ ${f(rosL,2)}.`])],
+ sol:[`|Γ_in| = (${f(rosI,1)} − 1)/(${f(rosI,1)} + 1) = ${f(rI,3)}.`,`Aller-retour : l’onde réfléchie subit 2A dB de pertes ⇒ |Γ_L| = |Γ_in|·10^(A/10) = ${f(rL,3)}.`,`ROS_L = (1+|Γ_L|)/(1−|Γ_L|) = ${f(rosL,2)} : le câble « masque » la mauvaise adaptation de la charge.`]}};
+const loss3Ex=()=>{const ll=pick([.05,.1,.15,.2,.3]),A=pick([.5,1,2]),k=Math.pow(10,-A/10),pin=C.mul([-k,0],C.pol(1,-720*ll)),zi=zof(pin),Q=Math.abs(zi[1])/zi[0];
+ return{free:1,intro:`Un tronçon de câble 50 Ω de longueur ${f(ll,2)} λ, avec un affaiblissement total de ${f(A,1)} dB, est terminé par un court-circuit. Étudie son impédance d’entrée en tenant compte des pertes.`,steps:[
+ RD('Donne z_in = r + jx à l’entrée du tronçon.',[F('r',zi[0],tl(zi[0])),F('x',zi[1],tl(zi[1]))],0,['Pars du court-circuit (z = 0, point de gauche) et applique la rotation avec pertes (outil Rotation, champ « pertes »).',`Rotation de ${f(720*ll,1)}° ; |Γ| = 10^(−${f(A,1)}/10) = ${f(k,3)}.`,`z_in ≈ ${zs(zi)}.`]),
+ RD('Donne le facteur de qualité Q = |x|/r de ce tronçon.',[F('Q',Q,tv(Q,.3,.08))],0,['Utilise les valeurs r et x lues précédemment.','Q = |X|/R : rapport de la réactance à la résistance de pertes.',`Q ≈ ${f(Q,1)}.`])],
+ sol:[`Court-circuit : Γ = −1. Après ${f(ll,2)} λ avec pertes : Γ_in = −10^(−A/10)·e^(−j${f(720*ll,0)}°) = ${f(k,3)}∠${f(C.arg(pin),1)}°.`,`z_in = ${zs(zi)} : sans pertes on aurait r = 0 ; les pertes ajoutent une résistance.`,`Q = |x|/r = ${f(Q,1)}.`]}};
+EX.push(
+{id:11,free:1,name:'Double stub en série',lv:'Cas pratique',d:'Deux stubs en court-circuit en série : raisonnement en impédances.',V:[
+ {n:'Espacement λ/8',mk(){for(;;){const lam=pick([.3,.5,1]),Z=pick(ZL),d1=lam*pick([.1,.15,.2]);if(dsSolS([Z[0]/50,Z[1]/50],d1/lam,.125).sols.length)return dsExS(Z,lam,d1,lam*.125,lam*pick([.2,.4]))}}},
+ {n:'Espacement 3λ/8',mk(){for(;;){const lam=pick([.3,.5,1]),Z=pick(ZL),d1=lam*pick([.1,.15,.2]);if(dsSolS([Z[0]/50,Z[1]/50],d1/lam,.375).sols.length)return dsExS(Z,lam,d1,lam*.375,lam*pick([.125,.2]))}}},
+ {n:'Variante aléatoire',mk(){for(;;){const lam=pick([.3,.5,1]),Z=pick(ZL),d1=lam*pick([.1,.15,.2,.3]),s=lam*pick([.125,.15,.2,.375]),s2=lam*pick([.2,.4,.45]);if(dsSolS([Z[0]/50,Z[1]/50],d1/lam,s/lam).sols.length)return dsExS(Z,lam,d1,s,s2)}}}]},
+{id:12,free:1,name:'Lignes avec pertes',lv:'Cas pratique',d:'Spirale sur l’abaque : impédance d’entrée, ROS masqué par le câble, tronçon court-circuité.',V:[{n:'Impédance d’entrée',mk:lossEx},{n:'ROS et affaiblissement',mk:loss2Ex},{n:'Court-circuit avec pertes',mk:loss3Ex}]});
+
+/* ---------- Géométrie, zoom ---------- */
+const cv=$('#cv'),ctx=cv.getContext('2d');let W=0,R0=0,V={k:1,u:0,v:0},G=[];
+const RR=()=>R0*V.k,X=p=>W/2+(p[0]-V.u)*RR(),Y=p=>W/2-(p[1]-V.v)*RR(),inv=(x,y)=>[(x-W/2)/RR()+V.u,-(y-W/2)/RR()+V.v];
+const cs=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const BASE=[.2,.5,1,2,5],MID=[.1,.3,.4,.6,.8,1.5,3,4,10],FINE=[.15,.25,.35,.45,.55,.65,.7,.75,.9,1.2,1.4,1.6,1.8,2.5,3.5,6,7,8,9,15,20,50];
+const gridFor=k=>{const v=BASE.concat(k>=1.8?MID:[],k>=4?FINE:[]),o=[],lv=r=>BASE.includes(r)?0:MID.includes(r)?1:2;v.forEach(r=>o.push({id:'r:'+r,c:[r/(1+r),0],rad:1/(1+r),t:'r',v:r,lv:lv(r)}));v.forEach(x=>[1,-1].forEach(s=>o.push({id:'x:'+x*s,c:[1,1/(x*s)],rad:1/x,t:'x',v:x*s,lv:lv(x)})));return o},GA=gridFor(99);
+function clampV(){V.k=Math.min(12,Math.max(1,V.k));if(V.k==1){V.u=V.v=0}else{V.u=Math.max(-1.3,Math.min(1.3,V.u));V.v=Math.max(-1.3,Math.min(1.3,V.v))}}
+function zoomAt(x,y,k){const p=inv(x,y);V.k=k;clampV();V.u=p[0]-(x-W/2)/RR();V.v=p[1]+(y-W/2)/RR();clampV();draw()}
+const zoomBtn=f=>zoomAt(W/2,W/2,V.k*f),zoomReset=()=>{V={k:1,u:0,v:0};draw()};
+function size(){const w=Math.max(300,Math.min($('#cw').clientWidth-14,680)),d=devicePixelRatio||1;cv.width=cv.height=w*d;cv.style.width=cv.style.height=w+'px';ctx.setTransform(d,0,0,d,0,0);W=w;R0=w*.375;draw()}
+const sam=g=>{const o=[];if(g.t=='r'){for(let i=0;i<120;i++){const a=i*Math.PI/60;o.push([g.c[0]+g.rad*Math.cos(a),g.c[1]+g.rad*Math.sin(a)])}}else{const p0=gam([0,g.v]),A=Math.atan2(p0[1]-g.c[1],p0[0]-g.c[0]);let D=(g.v>0?-Math.PI/2:Math.PI/2)-A;D=Math.atan2(Math.sin(D),Math.cos(D));for(let i=0;i<=100;i++){const a=A+D*i/100;o.push([g.c[0]+g.rad*Math.cos(a),g.c[1]+g.rad*Math.sin(a)])}}return o};
+function draw(){G=gridFor(V.k);const tx=cs('--tx'),mu=cs('--mu'),ln=cs('--ln'),ac=cs('--ac'),cr=cs('--r'),cb=cs('--x'),gh=cs('--gh'),ko=cs('--ko'),sc=cs('--sc'),R=RR(),cx=X([0,0]),cy=Y([0,0]),fs=Math.max(9,W*.016);
+ ctx.clearRect(0,0,W,W);ctx.setLineDash([]);ctx.textAlign='center';
+ const disc=()=>{ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip()};
+ const arc=(c,rad,lw,col,dash,clip)=>{ctx.save();if(clip)disc();ctx.beginPath();ctx.arc(X(c),Y(c),rad*R,0,7);ctx.lineWidth=lw;ctx.strokeStyle=col;ctx.setLineDash(dash||[]);ctx.stroke();ctx.restore()};
+ const dot=(p,col,lab)=>{ctx.beginPath();ctx.arc(X(p),Y(p),5,0,7);ctx.fillStyle=col;ctx.fill();ctx.font='bold 13px sans-serif';ctx.textAlign='left';ctx.fillText(lab,X(p)+8,Y(p)-8);ctx.textAlign='center'};
+ ctx.save();disc();G.forEach(g=>{ctx.globalAlpha=g.lv?.65:1;ctx.lineWidth=g.lv?.7:1;ctx.strokeStyle=g.t=='r'?cr:cb;ctx.beginPath();ctx.arc(X(g.c),Y(g.c),g.rad*R,0,7);ctx.stroke()});
+ ctx.globalAlpha=1;ctx.strokeStyle=ln;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X([-1,0]),cy);ctx.lineTo(X([1,0]),cy);ctx.stroke();ctx.restore();
+ ctx.lineWidth=1.5;ctx.strokeStyle=tx;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
+ const vis=p=>{const a=X(p),b=Y(p);return a>14&&a<W-14&&b>14&&b<W-14&&Math.hypot(p[0],p[1])<.985};
+ G.forEach(g=>{let best=null,bs=-9;sam(g).forEach(p=>{if(!vis(p))return;const s=g.t=='r'?-Math.abs(p[1]):Math.hypot(p[0],p[1]);if(s>bs){bs=s;best=p}});
+  if(best){ctx.fillStyle=g.t=='r'?cr:cb;ctx.font=(g.lv>1?fs-1:fs)+'px sans-serif';ctx.fillText(String(g.v).replace('.',','),X(best),Y(best)-(g.t=='r'?3:-8))}});
+ ctx.font=fs+'px sans-serif';ctx.fillStyle=tx;if(X([-1,0])>0)ctx.fillText('0',X([-1,0])-9,cy+4);if(X([1,0])<W)ctx.fillText('∞',X([1,0])+10,cy+4);
+ const onC=(x,y)=>x>-30&&x<W+30&&y>-30&&y<W+30,sa=[.1,.2,.5,1,2,5,10].find(s=>R*s*Math.PI/180>=9)||10,la=[.2,.5,1,2,5,10,30].find(s=>R*s*Math.PI/180>=55)||30,N=Math.round(180/sa);
+ for(let n=-N;n<N;n++){const a=n*sa,r=a*Math.PI/180,c=Math.cos(r),s=Math.sin(r),x0=cx+R*c,y0=cy-R*s;if(!onC(x0,y0))continue;const mj=Math.abs(a/la-Math.round(a/la))<1e-6,L=(mj?.016:.008)*W;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(cx+(R+L)*c,cy-(R+L)*s);ctx.strokeStyle=mu;ctx.lineWidth=1;ctx.stroke();if(mj){ctx.fillStyle=mu;ctx.fillText(+a.toFixed(1)+'°',cx+(R+.05*W)*c,cy-(R+.05*W)*s+3)}}
+ const sw=[.0005,.001,.002,.005,.01].find(s=>R*12.566*s>=9)||.01,lw=[.001,.002,.005,.01,.02,.05,.1].find(s=>R*12.566*s>=55)||.1,M=Math.round(.5/sw),r0=R+.07*W;
+ for(let m=0;m<=M;m++){const lm=m*sw,r=(180-720*lm)*Math.PI/180,c=Math.cos(r),s=Math.sin(r),x0=cx+r0*c,y0=cy-r0*s;if(!onC(x0,y0))continue;const mj=Math.abs(lm/lw-Math.round(lm/lw))<1e-6,L=(mj?.02:.01)*W;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(cx+(r0+L)*c,cy-(r0+L)*s);ctx.strokeStyle=ac;ctx.stroke();if(mj){ctx.fillStyle=ac;ctx.fillText(f(lm,lw<.01?3:2),cx+(R+.12*W)*c,cy-(R+.12*W)*s+3)}}
+ if(V.k<1.5){ctx.fillStyle=mu;ctx.fillText('angle de Γ',W/2,cy-R-.062*W+fs*.2);ctx.fillStyle=ac;ctx.fillText('λ vers le générateur →',W/2,W-4)}
+ S.dr.sel.forEach(id=>{const g=GA.find(q=>q.id==id);if(g)arc(g.c,g.rad,3.5,ac,[],1)});
+ S.dr.cs.forEach(r=>arc([0,0],r,2.5,ac));S.dr.cc.forEach(k=>arc(k.c,k.rad,2.5,ac));S.dr.pts.forEach(q=>dot(q.p,ac,q.lab));
+ ((S.inst&&S.inst.given)||[]).forEach(q=>dot(q.p,tx,q.lab));
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,R+.13*W,0,7);ctx.clip();ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.strokeStyle=sc;
+ S.sc.forEach(l=>{const d=C.sub(l.b,l.a),n=C.abs(d),u=[d[0]/n*4,d[1]/n*4],A=C.sub(l.a,u),B=C.add(l.a,u);ctx.beginPath();ctx.moveTo(X(A),Y(A));ctx.lineTo(X(B),Y(B));ctx.stroke()});
+ S.cl.forEach(k=>{ctx.beginPath();ctx.arc(X(k.c),Y(k.c),k.rad*R,0,7);ctx.stroke()});
+ S.ar.forEach(a=>{ctx.beginPath();for(let i=0;i<=80;i++){const u=i/80,th=(a.a0+(a.a1-a.a0)*u)*Math.PI/180,r=(a.rho+(a.rho1-a.rho)*u)*R;i?ctx.lineTo(cx+r*Math.cos(th),cy-r*Math.sin(th)):ctx.moveTo(cx+r*Math.cos(th),cy-r*Math.sin(th))}ctx.lineWidth=2.5;ctx.stroke()});ctx.restore();
+ ctx.fillStyle=sc;S.mk.forEach(q=>dot(q.p,sc,q.lab));if(S.p1){ctx.beginPath();ctx.arc(X(S.p1),Y(S.p1),4,0,7);ctx.fill()}
+ if(S.flash){const g=GA.find(q=>q.id==S.flash);if(g)arc(g.c,g.rad,3.5,ko,[],1)}
+ const s=cur(),gt=s&&S.hl>=3&&ghostOf(s);if(gt){ctx.setLineDash([6,5]);ctx.lineWidth=2.5;ctx.strokeStyle=gh;
+  if(gt.t=='cc')arc(gt.c,gt.rad,2.5,gh,[6,5]);else if(gt.t=='c')arc([0,0],gt.rho,2.5,gh,[6,5]);else if(gt.t=='pt'){ctx.beginPath();ctx.arc(X(gt.p),Y(gt.p),14,0,7);ctx.stroke()}else{const g=GA.find(q=>q.id==gt.id);if(g)arc(g.c,g.rad,3.5,gh,[6,5],1)}ctx.setLineDash([])}
+ $('#zl').textContent='×'+(V.k<10?V.k.toFixed(1):Math.round(V.k))}
+const ghostOf=s=>s.ghost||(s.t=='read'?null:s.t=='sel'?{t:'sel',id:s.id}:s.t=='circ'?{t:'c',rho:s.rho}:s.t=='cc'?{t:'cc',c:s.c,rad:s.rad}:{t:'pt',p:s.p});
+
+/* ---------- Logique ---------- */
+const nS=()=>({sc:[],cl:[],mk:[],ar:[],hist:[],p1:null,n:0});
+let S=Object.assign({ex:null,inst:null,i:0,pts:0,hl:0,wr:0,dr:{pts:[],cs:[],sel:[],cc:[]},tool:'sel',flash:null,ro:0},nS());
+const cur=()=>S.inst&&S.inst.steps[S.i],total=()=>Object.values(best).reduce((a,b)=>a+b,0),nl=()=>String.fromCharCode(65+(S.n++)%26);
+function start(id,vi){const e=EX.find(x=>x.id==id),k=vi==null?Math.floor(Math.random()*e.V.length):vi,v=e.V[k],inst=v.mk();V={k:1,u:0,v:0};S=Object.assign({ex:e,vi:k,vn:v.n,inst,i:0,pts:0,hl:0,wr:0,dr:{pts:[],cs:[],sel:[],cc:[]},tool:inst.free?'ln':'sel',flash:null,ro:0},nS());render();draw()}
+function menu(){S=Object.assign({ex:null,inst:null,i:0,pts:0,hl:0,wr:0,dr:{pts:[],cs:[],sel:[],cc:[]},tool:'sel',flash:null,ro:0},nS());render();draw()}
+function fin(){const k=S.ex.id+'|'+S.vn;best[k]=Math.max(best[k]||0,S.pts);save()}
+function giveup(){fin();S.i=S.inst.steps.length;render();draw()}
 function fb(m,c){const e=$('#fb');if(e){e.textContent=m;e.className=c}}
-function win(){const g=Math.max(2,10-3*S.hl-S.wr);S.pts+=g;S.i++;S.hl=0;S.wr=0;
- if(S.i>=S.inst.steps.length){const k=S.ex.id+'|'+S.vn;best[k]=Math.max(best[k]||0,S.pts);save()}
- render();draw();fb(`Correct ! +${g} pts`,'ok')}
+function win(){const g=Math.max(2,10-3*S.hl-S.wr);S.pts+=g;S.i++;S.hl=0;S.wr=0;if(S.i>=S.inst.steps.length)fin();render();draw();fb(`Correct ! +${g} pts`,'ok')}
 function wrong(m){S.wr++;fb(m,'ko')}
-function click(e){const s=cur();if(!s)return;const r=cv.getBoundingClientRect();let p=[((e.clientX-r.left)-O)/R,-((e.clientY-r.top)-O)/R];const tt=S.tool,L=tt=='ln'||tt=='cl';
+function add(...it){it.forEach(([k,o])=>S[k].push(o));S.hist.push(it.map(i=>i[0]))}
+function undo(){const g=S.hist.pop();if(g)g.forEach(k=>S[k].pop());S.p1=null;draw()}
+function clr(){Object.assign(S,nS());S.n=0;draw()}
+const nearG=(p,th)=>{let b=null,bd=th;G.forEach(g=>{const d=Math.abs(Math.hypot(p[0]-g.c[0],p[1]-g.c[1])-g.rad);if(d<bd){bd=d;b=g}});return b};
+function click(x,y){const s=cur();if(!s)return;const fr=!!S.inst.free,tt=S.tool,L=tt=='ln'||tt=='cl',th=.04/V.k;let p=inv(x,y);
  if(C.abs(p)>(L?1.3:1.03))return;
- if(L){const sn=[[0,0],...S.dr.pts.map(q=>q.p),...((S.inst.given)||[]).map(q=>q.p)].find(q=>C.abs(C.sub(p,q))<.04);if(sn)p=sn;
+ if(L){const sn=[[0,0],...S.dr.pts.map(q=>q.p),...S.mk.map(q=>q.p),...(S.inst.given||[]).map(q=>q.p)].find(q=>C.abs(C.sub(p,q))<th);if(sn)p=sn;
   if(!S.p1){S.p1=p;return draw()}
   const a=S.p1;S.p1=null;
-  if(tt=='ln'){if(C.abs(C.sub(a,p))>.01)S.sc.push({a,b:p});return draw()}
+  if(tt=='ln'){if(C.abs(C.sub(a,p))>.002)add(['sc',{a,b:p}]);return draw()}
   const rad=C.abs(C.sub(a,p));
-  if(s.t=='cc'){if(C.abs(C.sub(a,s.c))<.05&&Math.abs(rad-s.rad)<.05){S.dr.cc.push({c:s.c,rad:s.rad});return win()}S.cl.push({c:a,rad});draw();return wrong('Ce cercle n’est pas le bon.')}
-  S.cl.push({c:a,rad});return draw()}
- if(s.t=='read')return fb('Cette étape se répond dans les champs ci-dessous.','');
- if(tt=='sel'){let b=null,bd=1;G.forEach(g=>{const d=Math.abs(Math.hypot(p[0]-g.c[0],p[1]-g.c[1])-g.rad);if(d<bd){bd=d;b=g}});
-  if(bd>.035)return fb('Aucun trait du quadrillage à cet endroit.','');
+  if(!fr&&s.t=='cc'){if(C.abs(C.sub(a,s.c))<.05&&Math.abs(rad-s.rad)<.05){S.dr.cc.push({c:s.c,rad:s.rad});return win()}add(['cl',{c:a,rad}]);draw();return wrong('Ce cercle n’est pas le bon.')}
+  add(['cl',{c:a,rad}]);return draw()}
+ if(tt=='sy'){add(['sc',{a:[0,0],b:p}],['mk',{p:neg(p),lab:nl()}]);fb('Point symétrique (z ↔ y) placé.','');return draw()}
+ if(tt=='ro'){const d=parseFloat(($('#rotd').value||'').replace(',','.'));if(!isFinite(d))return fb('Saisis d en λ (ex. 0,125).','ko');const A=parseFloat(($('#rota').value||'0').replace(',','.'))||0,a0=C.arg(p),r1=C.abs(p)*Math.pow(10,(d>0?-A:A)/10);add(['ar',{rho:C.abs(p),rho1:r1,a0,a1:a0-720*d}],['mk',{p:C.pol(r1,a0-720*d),lab:nl()}]);fb(`Rotation de ${f(d,3)} λ = ${f(720*d,1)}° ${d>0?'vers le générateur (sens horaire)':'vers la charge (sens anti-horaire)'}${A?`, pertes ${f(A,2)} dB`:''}.`,'');return draw()}
+ if(tt=='c'&&(fr||s.t!='circ')){add(['cl',{c:[0,0],rad:C.abs(p)}]);return draw()}
+ if(fr){if(tt=='pt'){add(['mk',{p,lab:nl()}]);return draw()}
+  const b=nearG(p,.035/V.k);if(!b)return fb('Aucun trait du quadrillage à cet endroit.','');const i=S.dr.sel.indexOf(b.id);i<0?S.dr.sel.push(b.id):S.dr.sel.splice(i,1);return draw()}
+ if(s.t=='read')return fb('Cette étape se répond dans les champs ci-dessous (le brouillon reste disponible).','');
+ if(tt=='sel'){const b=nearG(p,.035/V.k);
+  if(!b)return fb('Aucun trait du quadrillage à cet endroit.','');
   if(s.t!='sel')return fb('Cette sélection ne répond pas à la question en cours.','');
   if(b.id==s.id){S.dr.sel.push(b.id);win()}else{S.flash=b.id;draw();setTimeout(()=>{S.flash=null;draw()},900);wrong('Ce n’est pas le trait attendu.')}}
  else if(tt=='pt'){if(s.t!='pt')return fb('Placer un point ne répond pas à la question en cours.','');
   if(C.abs(C.sub(p,s.p))<.05){S.dr.pts.push({p,lab:s.lab});win()}else wrong('Ce point ne correspond pas.')}
- else{if(s.t!='circ')return fb('Ce tracé ne répond pas à la question en cours.','');
-  if(Math.abs(C.abs(p)-s.rho)<.04){S.dr.cs.push(s.rho);win()}else wrong('Ce cercle n’est pas le bon.')}}
-cv.addEventListener('click',click);
+ else{if(Math.abs(C.abs(p)-s.rho)<.04){S.dr.cs.push(s.rho);win()}else wrong('Ce cercle n’est pas le bon.')}}
+function readout(p){if(!S.ro||C.abs(p)>1)return;const z=zof(p),y=C.div([1,0],z);$('#ro').textContent=`|Γ| = ${f(C.abs(p),3)} ∠ ${f(C.arg(p),1)}° · z = ${zs(z)} · y = ${zs(y)} · λ = ${f(wtg(p),3)}`}
+const ptr=new Map();let drag=null,pin=null;
+const pd=()=>{const a=[...ptr.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,{x:e.offsetX,y:e.offsetY});if(ptr.size==1)drag={x:e.offsetX,y:e.offsetY,u:V.u,v:V.v,m:0};else{drag=null;pin={d:pd(),k:V.k}}});
+cv.addEventListener('pointermove',e=>{if(!ptr.has(e.pointerId)){readout(inv(e.offsetX,e.offsetY));return}ptr.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+ if(ptr.size==2&&pin){const a=[...ptr.values()];zoomAt((a[0].x+a[1].x)/2,(a[0].y+a[1].y)/2,pin.k*pd()/pin.d);return}
+ if(drag){const dx=e.offsetX-drag.x,dy=e.offsetY-drag.y;if(drag.m||Math.hypot(dx,dy)>6){drag.m=1;V.u=drag.u-dx/RR();V.v=drag.v+dy/RR();clampV();draw()}}});
+const up=e=>{if(drag&&!drag.m&&ptr.size==1&&e.type=='pointerup')click(e.offsetX,e.offsetY);ptr.delete(e.pointerId);if(ptr.size<2)pin=null;if(!ptr.size)drag=null};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.offsetX,e.offsetY,V.k*(e.deltaY<0?1.25:.8))},{passive:false});
 function submit(){const s=cur();let all=true;s.fields.forEach((fd,k)=>{const el=$('#f'+k),v=parseFloat((el.value||'').replace(',','.')),t=fd.tol||Math.max(.05,.06*Math.abs(fd.v)),ok=isFinite(v)&&Math.abs(v-fd.v)<=t;if(!ok)all=false;el.className=ok?'g':'b'});
- all?win():wrong('Une ou plusieurs valeurs sont incorrectes (en rouge). Relis l’abaque.')}
-function hint(){const s=cur();if(S.hl>=3)return;S.hl++;$('#hints').innerHTML=s.h.slice(0,S.hl).map((t,k)=>`<div><b>Indice ${k+1}/3 : </b>${t}</div>`).join('');draw();if(S.hl>=3)fb('Indice 3 : la zone concernée est indiquée en pointillés sur l’abaque.','')}
+ all?win():wrong('Une ou plusieurs valeurs sont incorrectes (en rouge). Vérifie ton tracé, ta lecture et les unités.')}
+function showH(){const s=cur();$('#hints').innerHTML=s.h.slice(0,S.hl).map((t,k)=>`<div><b>Indice ${k+1}/3 : </b>${t}</div>`).join('')}
+function hint(){if(S.hl>=3)return;S.hl++;showH();draw();if(S.hl>=3)fb('Indice 3 : réponse quasi complète (et zone en pointillés si elle existe sur l’abaque).','')}
 function tool(t){S.tool=t;S.p1=null;document.querySelectorAll('.tools button[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t==t));draw()}
-function clr(){S.sc=[];S.cl=[];S.p1=null;draw()}
 function render(){$('#tot').textContent=total()+S.pts;const P=$('#panel');
- if(!S.ex){P.innerHTML=`<h2>Choisis un exercice</h2><p class="sm">Réponds en traçant sur l’abaque puis en lisant les valeurs. Chaque étape rapporte jusqu’à 10 points ; indices et erreurs en font perdre. Le brouillon (droites, cercles libres) est gratuit et illimité.</p>`+EX.map(e=>`<div class="card"><b>${e.lv} – ${e.name}</b><span>${e.d}</span><div class="row"><button class="btn" onclick="start(${e.id})">Variante aléatoire</button>${e.V.map((v,k)=>`<button class="btn alt" onclick="start(${e.id},${k})">${v.n} <span>(${best[e.id+'|'+v.n]||0} pts)</span></button>`).join('')}</div></div>`).join('');return}
- const st=S.inst.steps,n=st.length,s=cur(),tb=[['sel','Trait du quadrillage'],['pt','Point'],['c','Cercle |Γ|'],['cl','Cercle libre'],['ln','Droite (brouillon)']];
+ if(!S.ex){let pf=0;P.innerHTML=`<h2>Choisis un exercice</h2><p class="sm">Réponds en traçant sur l’abaque puis en lisant les valeurs. Chaque étape rapporte jusqu’à 10 points ; indices et erreurs en font perdre. Le brouillon est gratuit et illimité.</p>`+EX.map(e=>{const hd=e.free&&!pf?(pf=1,'<h2 style="margin-top:18px">Cas pratiques – abaque libre</h2><p class="sm">Tous les tracés sont permis ; seules tes réponses numériques sont vérifiées. Correction détaillée à la fin.</p>'):'';return hd+`<div class="card"><b>${e.lv} – ${e.name}</b><span>${e.d}</span><div class="row"><button class="btn" onclick="start(${e.id})">Variante aléatoire</button>${e.V.map((v,k)=>`<button class="btn alt" onclick="start(${e.id},${k})">${v.n} <span>(${best[e.id+'|'+v.n]||0} pts)</span></button>`).join('')}</div></div>`}).join('');return}
+ const st=S.inst.steps,n=st.length,s=cur(),fr=S.inst.free,tb=[['sel',fr?'Surligner un trait':'Trait du quadrillage'],['pt',fr?'Marqueur':'Point'],['c','Cercle |Γ|'],['cl','Cercle libre'],['ln','Droite'],['sy','Symétrie (y=1/z)'],['ro','Rotation d/λ']];
  let h=`<h2>${S.ex.lv} – ${S.ex.name}</h2><div class="sm">${S.vn}</div><div class="bar"><i style="width:${S.i/n*100}%"></i></div><div class="sm">Étape ${Math.min(S.i+1,n)}/${n} · ${S.pts} pts</div><div class="intro">${S.inst.intro}</div>`;
  h+=st.slice(0,S.i).map(x=>`<div class="st d">✓ ${x.txt}</div>`).join('');
- if(s){h+=`<div class="cur">${s.txt}</div><div class="tools" role="group" aria-label="Outils">${tb.map(([k,l])=>`<button data-t="${k}" onclick="tool('${k}')" class="${S.tool==k?'on':''}">${l}</button>`).join('')}<button class="clr" onclick="clr()">Effacer le brouillon</button></div><div class="sm">Droite : clique deux points (centre et points posés s’aimantent), elle se prolonge jusqu’aux échelles. Cercle libre : centre, puis un point du cercle.</div>`;
+ if(s){h+=`<div class="cur">${s.txt}</div><div class="tools" role="group" aria-label="Outils">${tb.map(([k,l])=>`<button data-t="${k}" onclick="tool('${k}')" class="${S.tool==k?'on':''}">${l}</button>`).join('')}<button class="clr" onclick="undo()">Annuler</button><button class="clr" onclick="clr()">Effacer le brouillon</button></div><div class="sm">Droite et cercle libre : deux clics (le centre et les points posés s’aimantent). Rotation : saisis d <input id="rotd" value="0,125" style="width:64px"> λ (positif = vers le générateur), pertes <input id="rota" value="0" style="width:56px"> dB (aller simple) puis clique un point. Molette / pincement pour zoomer, glisser pour déplacer.${fr?` <label><input type="checkbox" style="width:auto" ${S.ro?'checked':''} onchange="S.ro=this.checked;$('#ro').textContent=''"> lecture du curseur</label>`:''}</div>`;
   if(s.t=='read')h+=`<div class="fl">${s.fields.map((fd,k)=>`<label>${fd.l}<input id="f${k}" inputmode="decimal" autocomplete="off" onkeydown="if(event.key=='Enter')submit()"></label>`).join('')}<button class="btn" onclick="submit()">Valider</button></div>`;
-  h+=`<div class="row"><button class="btn alt" onclick="hint()">Indice${S.hl?` (${S.hl}/3)`:''}</button><button class="btn alt" onclick="menu()">Quitter</button></div><div id="hints"></div><div id="fb"></div>`}
- else h+=`<div class="cur"><b>Exercice terminé : ${S.pts} / ${n*10} pts</b></div><div class="row"><button class="btn" onclick="start(${S.ex.id},${S.vi})">Nouveau tirage</button><button class="btn alt" onclick="menu()">Menu</button></div>`;
- P.innerHTML=h;if(s&&S.hl)hint(),S.hl--}
+  h+=`<div class="row"><button class="btn alt" onclick="hint()">Indice${S.hl?` (${S.hl}/3)`:''}</button>${fr?'<button class="btn alt" onclick="giveup()">Voir la correction</button>':''}<button class="btn alt" onclick="menu()">Quitter</button></div><div id="hints"></div><div id="fb"></div>`}
+ else h+=`<div class="cur"><b>Exercice terminé : ${S.pts} / ${n*10} pts</b></div>${(S.inst.sol||[]).length?`<div class="sol"><h3>Correction détaillée</h3>${S.inst.sol.map(t=>`<p>${t}</p>`).join('')}</div>`:''}<div class="row"><button class="btn" onclick="start(${S.ex.id},${S.vi})">Nouveau tirage</button><button class="btn alt" onclick="menu()">Menu</button></div>`;
+ P.innerHTML=h;if(s&&S.hl)showH()}
 addEventListener('resize',size);matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
 render();size();
 </script></body></html>
