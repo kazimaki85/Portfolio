@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smith Trainer – apprendre l’abaque de Smith</title>
+<style>
+:root{--bg:#f3f5f2;--sf:#fff;--tx:#1b2a2a;--mu:#5d6d6b;--ln:#cfd8d5;--ac:#0b7a75;--r:#c2410c;--x:#2457a6;--ok:#15803d;--ko:#b91c1c;--gh:#b7791f;--sc:#7c3aed;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1b1b;--sf:#172625;--tx:#e6efed;--mu:#9bb0ac;--ln:#2e4543;--ac:#3fc4bb;--r:#f08a5d;--x:#7aa7ee;--ok:#4ade80;--ko:#f87171;--gh:#f0c060;--sc:#b794f6;color-scheme:dark}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Source Sans 3","Segoe UI",system-ui,sans-serif}
+h1,h2{font-family:"Fraunces",Georgia,serif;margin:0;font-weight:600}
+header{display:flex;justify-content:space-between;align-items:baseline;padding:14px 18px;border-bottom:1px solid var(--ln);gap:12px;flex-wrap:wrap}
+h1{font-size:22px}.tot{color:var(--mu)}.tot b{color:var(--ac);font-size:18px}
+main{display:grid;grid-template-columns:minmax(0,680px) minmax(300px,1fr);gap:16px;padding:16px;max-width:1200px;margin:auto}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+#cw{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:6px;display:flex;justify-content:center}
+canvas{cursor:crosshair;touch-action:manipulation;max-width:100%}
+#panel{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:16px;align-self:start}
+.card{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:10px 12px;margin:8px 0;color:var(--tx);cursor:pointer;font:inherit}
+.card:hover,.card:focus-visible{border-color:var(--ac)}.card b{display:block}.card span{color:var(--mu);font-size:13px}
+button{font:inherit}.btn{background:var(--ac);color:var(--bg);border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.alt{background:transparent;color:var(--tx);border:1px solid var(--ln)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin:8px 0 12px}.bar i{display:block;height:100%;background:var(--ac);transition:width .4s}
+.intro{background:var(--bg);border-radius:6px;padding:8px 10px;margin:8px 0}
+.st{padding:4px 0;color:var(--mu);font-size:14px}.st.d{text-decoration:line-through;opacity:.7}
+.cur{border-left:3px solid var(--ac);padding:6px 10px;margin:10px 0;background:var(--bg);border-radius:0 6px 6px 0}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.tools button{background:var(--bg);border:1px solid var(--ln);color:var(--tx);border-radius:6px;padding:6px 10px;cursor:pointer}
+.tools button.on{border-color:var(--ac);background:var(--ac);color:var(--bg)}
+.fl{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:8px 0}.fl label{font-size:13px;color:var(--mu);display:flex;flex-direction:column;gap:2px}
+input{width:110px;padding:6px 8px;border:1px solid var(--ln);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+input.g{border-color:var(--ok)}input.b{border-color:var(--ko)}
+#hints div{border-left:3px solid var(--gh);padding:4px 10px;margin:6px 0;font-size:14px}
+#fb{min-height:24px;margin-top:8px;font-weight:600}.ok{color:var(--ok)}.ko{color:var(--ko)}
+.card .row{margin-top:8px}.card .btn span{font-size:12px;color:inherit;opacity:.8}.tools .clr{border-style:dashed}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.sm{font-size:13px;color:var(--mu)}
+</style></head><body>
+<header><h1>Smith Trainer</h1><div class="tot">Progression totale : <b id="tot">0</b> pts</div></header>
+<main><div id="cw"><canvas id="cv" aria-label="Abaque de Smith interactif"></canvas></div><div id="panel"></div></main>
+<script>
+const $=s=>document.querySelector(s);
+const C={add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],div:(a,b)=>{const d=b[0]*b[0]+b[1]*b[1];return[(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d]},abs:a=>Math.hypot(a[0],a[1]),arg:a=>Math.atan2(a[1],a[0])*180/Math.PI,pol:(r,d)=>[r*Math.cos(d*Math.PI/180),r*Math.sin(d*Math.PI/180)]};
+const gam=z=>C.div(C.sub(z,[1,0]),C.add(z,[1,0])),zof=p=>C.div(C.add([1,0],p),C.sub([1,0],p));
+const f=(x,n=2)=>x.toFixed(n).replace('.',','),zs=z=>`${f(z[0])} ${z[1]<0?'−':'+'} j${f(Math.abs(z[1]))}`;
+const pick=a=>a[Math.floor(Math.random()*a.length)],wtg=p=>(180-C.arg(p))/720,F=(l,v,tol)=>({l,v,tol});
+const neg=p=>[-p[0],-p[1]];
+let best=(()=>{try{return JSON.parse(localStorage.getItem('smith')||'{}')}catch(e){return{}}})();
+Object.keys(best).forEach(k=>{if(!k.includes('|'))delete best[k]});
+const save=()=>{try{localStorage.setItem('smith',JSON.stringify(best))}catch(e){}};
+
+/* ---------- Exercices ---------- */
+const hPT=['Repère le cercle r et l’arc x qui passent par ce point.','Le point est à leur intersection (x>0 en haut, x<0 en bas).','Le cercle en pointillés indique la zone à cliquer.'];
+const PT=(p,lab,txt,h)=>({t:'pt',p,lab,txt,h:h||hPT});
+const CI=(rho,txt,h)=>({t:'circ',rho,txt:txt||'Trace le cercle de |Γ| constant passant par ce point.',h:h||['Sur une ligne sans pertes, |Γ| est constant : le lieu est un cercle centré sur l’abaque.','Outil « Cercle |Γ| », puis clique sur le point : le cercle passe par lui.','Le cercle en pointillés est le résultat attendu.']});
+const RD=(txt,fields,ghost,h)=>({t:'read',txt,fields,ghost,h});
+const SE=(id,txt,h)=>({t:'sel',id,txt,h});
+const T=Math.max,tl=v=>T(.06,.07*Math.abs(v)),G3='Le cercle en pointillés indique la zone à cliquer.';
+const rd2=(z,gh,txt)=>RD(txt,[F('r',z[0],tl(z[0])),F('x',z[1],tl(z[1]))],gh,['Lis le cercle r et l’arc x qui passent par ce point.','x>0 au-dessus de l’axe horizontal, x<0 en dessous.',`z ≈ ${zs(z)}.`]);
+const zl=[[1.5,1],[.4,-.6],[3,2],[.5,1.2],[2,-1.5],[.3,.3]],yl=[[.5,.5],[2,-1],[.4,-.8],[1.5,.7],[.5,-1.5]],sg=v=>(v<0?'−':'+')+' '+f(Math.abs(v));
+const m1=Z0=>{const r=pick([.5,1,2]),x=pick([.5,1,2])*pick([1,-1]),p=gam([r,x]),m=C.abs(p),a=C.arg(p);return{intro:`Z₀ = ${Z0} Ω et Z_L = ${Z0*r} ${x<0?'−':'+'} j${Z0*Math.abs(x)} Ω.`,steps:[
+ RD('Normalise l’impédance de charge : donne r et x.',[F('r',r,.02),F('x',x,.02)],0,['Une impédance normalisée vaut z = Z/Z₀.',`Divise la partie réelle et la partie imaginaire de Z_L par ${Z0} Ω.`,`r = ${Z0*r}/${Z0} = ${f(r)} et x = ${Z0*x}/${Z0} = ${f(x)}.`]),
+ SE('r:'+r,'Sélectionne le trait du quadrillage qui correspond à la partie réelle de z.',['Les cercles tangents au bord, à droite de l’abaque, sont à partie réelle constante.',`Outil « Trait », puis clique sur le cercle gradué ${f(r)} sur l’axe horizontal.`,'Le trait en pointillés est le bon cercle.']),
+ SE('x:'+x,'Sélectionne le trait correspondant à la partie imaginaire de z.',['Les arcs qui partent du point de droite sont à réactance constante : x>0 en haut, x<0 en bas.',`Cherche l’arc gradué ${f(x)} sur le bord extérieur.`,'Le trait en pointillés est le bon arc.']),
+ PT(p,'z','Place le point représentant z.'),
+ RD('Lis |Γ| et arg Γ (en °).',[F('|Γ|',m,.04),F('arg Γ (°)',a,6)],{t:'pt',p},['|Γ| est la distance au centre (bord = 1). arg Γ se lit sur l’échelle extérieure des angles.','Outil « Droite » : trace centre → point en la prolongeant jusqu’à l’échelle des angles.',`|Γ| ≈ ${f(m)} et arg Γ ≈ ${f(a,0)}°.`])]}};
+const m4=(z,d,back)=>{const p=gam(z),pin=C.mul(p,C.pol(1,-720*d)),zi=zof(pin),ds=String(d).replace('.',',');
+ if(back)return{intro:`Une ligne sans pertes de ${ds} λ est mesurée en entrée : z_in = ${zs(zi)}. Quelle est la charge ?`,steps:[PT(pin,'z_in','Repère z_in.'),CI(C.abs(p)),PT(p,'z_L',`Recule de ${ds} λ vers la charge.`,['Vers la charge = sens anti-horaire.',`Sur l’échelle λ, retranche ${ds} (soit ${f(720*d,0)}° de rotation).`,G3]),rd2(z,{t:'pt',p},'Lis z_L = r + jx.')]};
+ return{intro:`Charge z_L = ${zs(z)}. On avance de d = ${ds} λ vers le générateur.`,steps:[PT(p,'z_L','Repère z_L.'),CI(C.abs(p),'Trace le cercle sur lequel se déplace le point.'),
+ RD('Lis la position de z_L sur l’échelle des longueurs d’onde vers le générateur (en λ).',[F('λ',wtg(p),.015)],{t:'pt',p},['L’échelle extérieure « λ » croît dans le sens horaire.','Outil « Droite » : prolonge centre → z_L jusqu’à l’échelle λ.',`≈ ${f(wtg(p),3)} λ.`]),
+ PT(pin,'z_in',`Place le point obtenu après ${ds} λ vers le générateur.`,['Vers le générateur = sens horaire.',`Un tour complet vaut λ/2. Nouvelle position ≈ ${f(wtg(p)+d,3)} λ.`,G3]),rd2(zi,{t:'pt',p:pin},'Lis z_in = r + jx.')]}};
+const ix=(c1,r1,c2,r2)=>{const dx=c2[0]-c1[0],dy=c2[1]-c1[1],D=Math.hypot(dx,dy);if(D>r1+r2||D<Math.abs(r1-r2))return null;const a=(r1*r1-r2*r2+D*D)/(2*D),h=Math.sqrt(Math.max(0,r1*r1-a*a)),mx=c1[0]+a*dx/D,my=c1[1]+a*dy/D;return[[mx+h*dy/D,my-h*dx/D],[mx-h*dy/D,my+h*dx/D]]};
+const m5=(par,open,second)=>{const z=pick([[2,1],[3,-1.5],[.4,.3],[1.5,-1]]),p=gam(z),P0=par?neg(p):p,rho=C.abs(p),pl=C.arg(P0),rot=a=>(((pl-a)%360)+360)%360,ac=Math.acos(rho)*180/Math.PI,[a1,a2]=rot(ac)<rot(-ac)?[ac,-ac]:[-ac,ac],ph=second?a2:a1,P1=C.pol(rho,ph),s1=zof(P1)[1],d=rot(ph)/720,ss=-s1,rt=par!==open,
+ l=rt?Math.atan2(1,-ss)/(2*Math.PI):((Math.atan(ss)+Math.PI)%Math.PI)/(2*Math.PI),Pb=gam([0,ss]),q=par?'b':'x',Q=par?'y':'z',sT=`${Q} = ${rt?'∞ (point de droite)':'0 (point de gauche)'}`;
+ return{intro:`Z₀ = 50 Ω, z_L = ${zs(z)}. Adaptation avec un stub ${open?'ouvert':'court-circuité'} en ${par?'parallèle (on raisonne en admittances)':'série (on raisonne en impédances)'}${second?', en retenant la deuxième solution':''}.`,steps:[
+ par?PT(P0,'y_L','Repère l’admittance de charge y_L.',['En admittance, y_L = 1/z_L : point opposé à z_L.',`Repère d’abord z_L = ${zs(z)}, puis prends son symétrique par rapport au centre.`,G3]):PT(P0,'z_L','Repère z_L.'),
+ CI(rho,`Trace le cercle de |Γ| constant passant par ${Q}_L.`),
+ SE('r:1',`Pour adapter, il faut ${par?'g':'r'} = 1. Sélectionne le trait correspondant.`,['Le cercle de partie réelle 1 passe par le centre de l’abaque.','Outil « Trait », puis clique sur le cercle r = 1 (celui qui passe par le centre).','Le trait en pointillés est le bon cercle.']),
+ PT(P1,Q+'₁',`En tournant vers le générateur depuis la charge, place ${second?'la deuxième':'la première'} intersection du cercle |Γ| avec ce trait.`,['Vers le générateur = sens horaire.',second?'C’est l’intersection rencontrée en second dans le sens horaire.':'C’est l’intersection rencontrée en premier dans le sens horaire.',G3]),
+ RD(`Lis ${q}₁ (${Q}₁ = 1 + j${q}₁) et la distance d (en λ) parcourue depuis la charge.`,[F(q+'₁',s1,T(.08,.07*Math.abs(s1))),F('d (λ)',d,.012)],{t:'pt',p:P1},[`${q}₁ se lit sur l’arc x passant par ${Q}₁ ; d est la différence des lectures sur l’échelle λ.`,`Échelle λ : charge ≈ ${f(wtg(P0),3)}, ${Q}₁ ≈ ${f(wtg(P1),3)} (modulo 0,5).`,`${q}₁ ≈ ${f(s1)} ; d ≈ ${f(d,3)} λ.`]),
+ RD(`Le stub ${open?'ouvert':'court-circuité'} doit annuler j${q}₁. Donne ${q}_stub et sa longueur l (en λ).`,[F(q+'_stub',ss,T(.08,.07*Math.abs(ss))),F('l (λ)',l,.012)],{t:'pt',p:Pb},[`${q}_stub = −${q}₁.`,`Part du point ${sT} et tourne vers le générateur jusqu’à la valeur ${q} = ${q}_stub : l est l’arc parcouru sur l’échelle λ.`,`${q}_stub ≈ ${f(ss)} ; l ≈ ${f(l,3)} λ.`])]}};
+const L6=s=>Math.atan2(1,-s)/(2*Math.PI);
+const m6=(d,g,imp)=>{const b=pick([.5,-.5,1,-1,1.5,-1.5]),y=[g,b],z=C.div([1,0],y),PL=gam(y),cA=C.pol(.5,720*d),I=ix([g/(1+g),0],1/(1+g),cA,.5),ds=d==.125?'λ/8':d==.375?'3λ/8':f(d,3)+' λ',dg=f(720*d,0),sh=[PL];
+ const intro=`Z₀ = 50 Ω, z_L = ${zs(z)}. Double stub en parallèle (court-circuits) espacés de ${ds}, le premier stub étant placé sur la charge.`;
+ const aux={t:'cc',c:cA,rad:.5,txt:'Trace le cercle auxiliaire : le cercle g = 1 tourné de l’espacement vers la charge.',h:['Après le 1er stub, on avancera de d vers le générateur pour arriver sur g = 1 : le point doit donc d’abord être sur le cercle g = 1 tourné de d vers la charge (sens anti-horaire).',`Même rayon (0,5) que le cercle g = 1 ; son centre est le centre de g = 1 tourné de ${dg}° (anti-horaire). Outil « Cercle libre » : centre, puis un point du cercle (la Droite aide à repérer l’angle).`,'Le cercle en pointillés est le cercle auxiliaire.']};
+ const base=[PT(neg(gam(z)),'y_L','Repère l’admittance de charge y_L.',['En admittance, y_L = 1/z_L : point opposé à z_L.',`Repère d’abord z_L, puis prends son symétrique par rapport au centre.`,G3]),
+ SE('r:'+g,'Le premier stub ne change que la susceptance : sélectionne le trait de conductance g constante de la charge.',['Ajouter une susceptance = se déplacer sur le cercle g constant.','Ce cercle est celui qui passe par y_L (lu avec les cercles r).','Le trait en pointillés est le bon cercle.']),aux];
+ if(imp){const n=I?2:0;return{intro,steps:[...base,RD('Ce cercle auxiliaire coupe-t-il le cercle g de la charge ? Donne le nombre d’intersections (0, 1 ou 2) et réponds 1 si le double stub peut adapter, 0 sinon.',[F('intersections',n,.1),F('adaptable (1/0)',I?1:0,.1)],0,['S’il n’y a pas d’intersection, le 1er stub ne peut pas amener le point sur le cercle auxiliaire.','Compare le rayon du cercle g (petit si g grand) et la position du cercle auxiliaire.',I?'Les deux cercles se coupent : adaptation possible.':'Les cercles ne se coupent pas : zone interdite, adaptation impossible.'])]}}
+ const Qp=I.sort((a,b)=>b[1]-a[1])[0],yQ=zof(Qp),B1=yQ[1]-b,l1=L6(B1),S=C.mul(Qp,C.pol(1,-720*d)),B2=-zof(S)[1],l2=L6(B2);
+ return{intro,steps:[...base,PT(Qp,'Q','Place l’intersection (la plus haute) du cercle g constant de la charge avec le cercle auxiliaire.',['Q est sur les deux cercles tracés.','Parmi les deux intersections, prends celle située le plus haut.',G3]),
+ RD('Stub 1 : donne la susceptance B₁ à ajouter (b en Q − b en y_L) et sa longueur l₁ (en λ).',[F('B₁',B1,T(.1,.07*Math.abs(B1))),F('l₁ (λ)',l1,.012)],{t:'pt',p:Qp},['Lis b en Q et en y_L sur les arcs x, puis fais la différence.','Part de y = ∞ (point de droite), tourne vers le générateur jusqu’à b = B₁ : l₁ est l’arc parcouru sur l’échelle λ.',`B₁ ≈ ${f(B1)} ; l₁ ≈ ${f(l1,3)} λ.`]),
+ CI(C.abs(Qp),'Depuis Q, trace le cercle de |Γ| constant.'),
+ PT(S,'y₂',`Avance de ${ds} (${dg}°) vers le générateur : place le point d’arrivée.`,['Sens horaire, d’un angle de 720° × d.',`Il doit tomber sur le cercle g = 1 (r = 1).`,G3]),
+ RD('Stub 2 : donne la susceptance B₂ qui annule la partie imaginaire de y₂ et sa longueur l₂ (en λ).',[F('B₂',B2,T(.1,.07*Math.abs(B2))),F('l₂ (λ)',l2,.012)],{t:'pt',p:gam([0,B2])},['B₂ = −b(y₂), avec y₂ = 1 + jb.','Même méthode : départ y = ∞, rotation horaire jusqu’à b = B₂.',`B₂ ≈ ${f(B2)} ; l₂ ≈ ${f(l2,3)} λ.`])]}};
+const EX=[
+{id:1,name:'Repérer une impédance',lv:'Niveau 1',d:'Normalisation, cercles r et x, lecture de Γ.',V:[
+ {n:'Z en ohms',mk:()=>m1(50)},{n:'Autre Z₀',mk:()=>m1(pick([25,75,100]))},
+ {n:'Point donné',mk(){const z=pick(zl),p=gam(z),g={t:'pt',p};return{intro:'Un point M est tracé sur l’abaque. Z₀ = 50 Ω.',given:[{p,lab:'M'}],steps:[rd2(z,g,'Lis z = r + jx au point M.'),RD('Lis |Γ| et arg Γ (en °) en M.',[F('|Γ|',C.abs(p),.04),F('arg Γ (°)',C.arg(p),6)],g,['|Γ| est la distance au centre (bord = 1) ; l’angle se lit sur l’échelle extérieure.','Outil « Droite » : trace centre → M jusqu’à l’échelle des angles.',`|Γ| ≈ ${f(C.abs(p))} ; arg ≈ ${f(C.arg(p),0)}°.`]),RD('Donne Z_M en ohms.',[F('R (Ω)',50*z[0],T(3,3.5*z[0])),F('X (Ω)',50*z[1],T(3,3.5*Math.abs(z[1])))],g,['Dénormalise : Z = z × Z₀.','R = r × 50 et X = x × 50.',`Z ≈ ${f(50*z[0],0)} ${z[1]<0?'−':'+'} j${f(50*Math.abs(z[1]),0)} Ω.`])]}}},
+ {n:'À partir de Γ',mk(){const m=pick([.3,.5,.6]),a=pick([30,60,120,-45,-90,-150]),p=C.pol(m,a),z=zof(p);return{intro:`Coefficient de réflexion Γ = ${f(m)} ∠ ${a}°.`,steps:[PT(p,'Γ','Place le point correspondant à ce coefficient de réflexion.',['Le module donne la distance au centre (bord = 1), l’angle se lit sur l’échelle extérieure.',`Outil « Droite » : trace la direction ${a}° depuis le centre jusqu’à l’échelle, puis avance de ${f(m)} sur ce rayon.`,G3]),rd2(z,{t:'pt',p},'Lis z = r + jx en ce point.')]}}}]},
+{id:2,name:'ROS et cercle de |Γ|',lv:'Niveau 2',d:'ROS, maxima et minima de tension, pertes de retour.',V:[
+ {n:'Depuis une charge',mk(){const z=pick(zl.concat([[2,-1.5]])),p=gam(z),rho=C.abs(p),ros=(1+rho)/(1-rho);return{intro:`Charge normalisée z_L = ${zs(z)}.`,steps:[PT(p,'z_L','Repère la charge z_L.'),CI(rho,'Trace le lieu des impédances rencontrées le long de la ligne sans pertes.'),
+ RD('Lis |Γ| et le rapport d’ondes stationnaires (ROS).',[F('|Γ|',rho,.04),F('ROS',ros,T(.1,.06*ros))],{t:'pt',p:[rho,0]},['Le ROS est la valeur de r où le cercle coupe l’axe horizontal, à droite du centre.','Ce point est un maximum de tension : z y est réel et supérieur à 1.',`ROS ≈ ${f(ros)} ; |Γ| ≈ ${f(rho)}.`]),
+ PT([-rho,0],'V_min','Place le point du minimum de tension.',['Au minimum de tension, Γ est réel et négatif.','Intersection du cercle avec l’axe horizontal, à gauche du centre.',G3]),
+ RD('Lis r en ce minimum de tension.',[F('r',1/ros,T(.03,.06/ros))],{t:'pt',p:[-rho,0]},['En ce point z est réelle ; lis la graduation de l’axe.','Compare avec le ROS.',`r = 1/ROS ≈ ${f(1/ros)}.`])]}}},
+ {n:'Depuis le ROS',mk(){const ros=pick([1.5,2,3,5]),rho=(ros-1)/(ros+1);return{intro:`Le ROS mesuré sur la ligne vaut ${f(ros)}.`,steps:[PT([rho,0],'V_max','Place le point du maximum de tension.',['Au maximum de tension, z est réel et égal au ROS.',`Prends le point de l’axe horizontal, à droite du centre, gradué ${f(ros)}.`,G3]),CI(rho,'Trace le cercle de |Γ| associé.'),
+ RD('Lis |Γ|, puis calcule les pertes de retour RL (dB) et la puissance réfléchie (%).',[F('|Γ|',rho,.03),F('RL (dB)',-20*Math.log10(rho),T(.6,.06*-20*Math.log10(rho))),F('P réfléchie (%)',rho*rho*100,T(2,.1*rho*rho*100))],{t:'pt',p:[rho,0]},['|Γ| est la distance centre → point (bord = 1).','RL = −20·log₁₀|Γ| ; puissance réfléchie = |Γ|².',`|Γ| ≈ ${f(rho)} ; RL ≈ ${f(-20*Math.log10(rho),1)} dB ; P ≈ ${f(rho*rho*100,1)} %.`])]}}},
+ {n:'Distance au minimum',mk(){const z=pick(zl),p=gam(z),rho=C.abs(p),ros=(1+rho)/(1-rho),dm=((C.arg(p)+180)%360)/720;return{intro:`Charge normalisée z_L = ${zs(z)}.`,steps:[PT(p,'z_L','Repère z_L.'),CI(rho),PT([-rho,0],'V_min','Place le premier minimum de tension rencontré en allant vers le générateur.',['Le minimum de tension est sur l’axe horizontal, à gauche du centre.','Sur le cercle, c’est le point à gauche (échelle λ = 0 ou 0,5).',G3]),
+ RD('Lis le ROS et la distance d_min (en λ) entre la charge et ce minimum.',[F('ROS',ros,T(.1,.06*ros)),F('d_min (λ)',dm,.015)],{t:'pt',p:[-rho,0]},['d_min est l’arc parcouru dans le sens horaire de z_L au minimum, lu sur l’échelle λ.',`z_L est à ≈ ${f(wtg(p),3)} λ ; le minimum est à 0,5 λ.`,`ROS ≈ ${f(ros)} ; d_min ≈ ${f(dm,3)} λ.`])]}}}]},
+{id:3,name:'Impédance ↔ admittance',lv:'Niveau 3',d:'Inversion, éléments en série et en parallèle.',V:[
+ {n:'z → y',mk(){const z=pick(zl.concat([[2,1],[.5,-1]])),p=gam(z),q=neg(p),y=C.div([1,0],z);return{intro:`Charge normalisée z_L = ${zs(z)}. On veut y_L = 1/z_L.`,steps:[PT(p,'z_L','Repère z_L.'),CI(C.abs(p)),PT(q,'y_L','Place le point qui représente y_L.',['Inverser z revient à un quart d’onde de ligne.','λ/4 = demi-tour sur le cercle |Γ| constant : point diamétralement opposé.','Le point est le symétrique de z_L par rapport au centre.']),
+ RD('Lis g et b (y_L = g + jb), en lisant le quadrillage comme r et x.',[F('g',y[0],tl(y[0])),F('b',y[1],tl(y[1]))],{t:'pt',p:q},['Au point opposé, les graduations r et x se lisent comme g et b.','Lis le cercle « r » et l’arc « x » passant par y_L.',`g ≈ ${f(y[0])} ; b ≈ ${f(y[1])}.`]),
+ RD('Avec Z₀ = 50 Ω, quelle est la conductance de la charge en mS ?',[F('G (mS)',20*y[0],T(1,1.2*y[0]))],0,['Admittance réelle = g/Z₀.','G = g × Y₀ avec Y₀ = 1/50 S = 20 mS.',`G ≈ ${f(20*y[0],1)} mS.`])]}}},
+ {n:'y → z',mk(){const y=pick(yl),P=gam(y),z=C.div([1,0],y);return{intro:`Admittance normalisée y_L = ${zs(y)} (g + jb).`,steps:[PT(P,'y_L','Repère y_L.',['Pour une admittance, g se lit comme r et b comme x.','Intersection du cercle « g » et de l’arc « b ».',G3]),CI(C.abs(P)),PT(neg(P),'z_L','Place le point qui représente z_L = 1/y_L.',['Inverser revient à un quart d’onde.','Prends le point diamétralement opposé à y_L.',G3]),rd2(z,{t:'pt',p:neg(P)},'Lis z_L = r + jx.')]}}},
+ {n:'Élément en parallèle',mk(){const y=pick(yl),B=pick([.5,-.5,1,-1,2,-2]),yt=[y[0],y[1]+B],P2=gam(yt);return{intro:`Admittance y_L = ${zs(y)}. On branche en parallèle un élément de susceptance B = ${sg(B)}.`,steps:[PT(gam(y),'y_L','Repère y_L.',['g se lit comme r et b comme x.','Intersection du cercle « g » et de l’arc « b ».',G3]),
+ PT(P2,'y_tot','Place y_tot = y_L + jB.',['Les admittances en parallèle s’ajoutent : seule la partie imaginaire change.','Reste sur le cercle g constant (cercle r de y_L) : monte si B>0, descends si B<0, de |B| sur les graduations x.',G3]),
+ RD('Lis g et b de y_tot.',[F('g',yt[0],tl(yt[0])),F('b',yt[1],tl(yt[1]))],{t:'pt',p:P2},['Lis le cercle et l’arc passant par y_tot.','g n’a pas changé.',`y_tot ≈ ${zs(yt)}.`]),
+ rd2(C.div([1,0],yt),{t:'pt',p:neg(P2)},'Donne z_tot = 1/y_tot (point opposé).')]}}},
+ {n:'Élément en série',mk(){const z=pick(zl),X=pick([.5,-.5,1,-1,2,-2]),zt=[z[0],z[1]+X],P2=gam(zt);return{intro:`Impédance z_L = ${zs(z)}. On place en série une réactance X = ${sg(X)}.`,steps:[PT(gam(z),'z_L','Repère z_L.'),
+ PT(P2,'z_tot','Place z_tot = z_L + jX.',['Les impédances en série s’ajoutent : seule x change.','Reste sur le cercle r constant : monte si X>0, descends si X<0.',G3]),
+ rd2(zt,{t:'pt',p:P2},'Lis z_tot.'),RD('Lis |Γ| et arg Γ (en °) pour z_tot.',[F('|Γ|',C.abs(P2),.04),F('arg Γ (°)',C.arg(P2),6)],{t:'pt',p:P2},['Distance au centre et angle sur l’échelle extérieure.','Outil « Droite » : centre → point → échelle des angles.',`|Γ| ≈ ${f(C.abs(P2))} ; arg ≈ ${f(C.arg(P2),0)}°.`])]}}}]},
+{id:4,name:'Déplacement sur une ligne',lv:'Niveau 4',d:'Vers le générateur ou la charge, λ/4, courts-circuits.',V:[
+ {n:'Vers le générateur',mk:()=>m4(pick([[.5,.5],[2,1],[1,-1],[.4,-.4],[2,-2]]),pick([.05,.1,.125,.15,.2,.3]))},
+ {n:'Vers la charge',mk:()=>m4(pick([[.5,.5],[2,1],[1,-1],[.4,-.4]]),pick([.05,.1,.125,.15,.2]),1)},
+ {n:'Lignes λ/4 et λ/2',mk(){const z=pick(zl),d=pick([.25,.5]),p=gam(z),pin=C.mul(p,C.pol(1,-720*d)),zi=zof(pin);return{intro:`Ligne sans pertes de longueur ${d==.25?'λ/4':'λ/2'}, chargée par z_L = ${zs(z)}.`,steps:[PT(p,'z_L','Repère z_L.'),CI(C.abs(p)),PT(pin,'z_in','Place z_in à l’entrée de la ligne.',['λ/4 = demi-tour du cercle (point opposé) ; λ/2 = tour complet (même point).',`Ici ${d==.25?'demi-tour':'tour complet'}.`,G3]),rd2(zi,{t:'pt',p:pin},'Lis z_in = r + jx.')]}}},
+ {n:'Court-circuit / circuit ouvert',mk(){const cc=pick([1,0]),d=pick([.05,.1,.15,.2,.3,.35,.4,.45]),s=[cc?-1:1,0],pin=C.mul(s,C.pol(1,-720*d)),zi=zof(pin);return{intro:`Ligne sans pertes de ${String(d).replace('.',',')} λ ${cc?'terminée par un court-circuit':'terminée par un circuit ouvert'}.`,steps:[PT(s,cc?'C.C.':'C.O.',`Place le point représentant ${cc?'un court-circuit (z = 0)':'un circuit ouvert (z = ∞)'}.`,['Un court-circuit est à gauche de l’abaque, un circuit ouvert à droite.','Court-circuit : point 0 ; circuit ouvert : point ∞ (extrémités de l’axe horizontal).',G3]),
+ PT(pin,'z_in',`Avance de ${String(d).replace('.',',')} λ vers le générateur sur le bord (|Γ| = 1).`,['Sens horaire.',`Tourne de ${f(720*d,0)}° depuis le point de départ.`,G3]),RD('Lis la réactance normalisée x de z_in (r = 0).',[F('x',zi[1],T(.1,.07*Math.abs(zi[1])))],{t:'pt',p:pin},['Le point est sur le bord : r = 0, lis l’arc x qui y arrive.','x>0 sur le demi-cercle supérieur, x<0 sur le demi-cercle inférieur.',`x ≈ ${f(zi[1])}.`])]}}}]},
+{id:5,name:'Adaptation par stub simple',lv:'Niveau 5',d:'Stub parallèle ou série, court-circuité ou ouvert, deux solutions.',V:[
+ {n:'Parallèle court-circuité',mk:()=>m5(1,0,0)},{n:'Parallèle ouvert',mk:()=>m5(1,1,0)},{n:'Série court-circuité',mk:()=>m5(0,0,0)},{n:'Série ouvert',mk:()=>m5(0,1,0)},{n:'Deuxième solution',mk:()=>m5(1,pick([0,1]),1)}]},
+{id:6,name:'Adaptation double stub',lv:'Niveau 6',d:'Cercle auxiliaire, deux stubs parallèles, zone interdite.',V:[
+ {n:'Espacement λ/8',mk:()=>m6(.125,pick([.2,.5]))},{n:'Espacement 3λ/8',mk:()=>m6(.375,pick([.2,.5]))},{n:'Espacement quelconque',mk:()=>m6(pick([.15,.2,.3,.35]),pick([.2,.5]))},{n:'Adaptation possible ?',mk:()=>m6(.125,pick([.5,5]),1)}]}
+];
+
+/* ---------- Géométrie de l’abaque ---------- */
+const G=[];[.2,.5,1,2,5].forEach(r=>G.push({id:'r:'+r,c:[r/(1+r),0],rad:1/(1+r),lab:'r='+f(r,1)}));
+[.2,.5,1,2,5].forEach(x=>[1,-1].forEach(s=>G.push({id:'x:'+x*s,c:[1,1/(x*s)],rad:1/x,lab:'x='+f(x*s,1)})));
+const cv=$('#cv'),ctx=cv.getContext('2d');let W=0,O=0,R=0;
+const X=p=>O+p[0]*R,Y=p=>O-p[1]*R,cs=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function size(){const w=Math.max(300,Math.min($('#cw').clientWidth-14,680)),d=devicePixelRatio||1;cv.width=cv.height=w*d;cv.style.width=cv.style.height=w+'px';ctx.setTransform(d,0,0,d,0,0);W=w;O=w/2;R=w*.375;draw()}
+function arcs(g,lw,col,dash){ctx.save();ctx.beginPath();ctx.arc(O,O,R,0,7);ctx.clip();ctx.beginPath();ctx.arc(X(g.c),Y(g.c),g.rad*R,0,7);ctx.lineWidth=lw;ctx.strokeStyle=col;ctx.setLineDash(dash||[]);ctx.stroke();ctx.restore()}
+function dot(p,col,lab){ctx.beginPath();ctx.arc(X(p),Y(p),5,0,7);ctx.fillStyle=col;ctx.fill();ctx.font='bold 13px sans-serif';ctx.fillText(lab,X(p)+8,Y(p)-8)}
+function draw(){
+ const tx=cs('--tx'),mu=cs('--mu'),ln=cs('--ln'),ac=cs('--ac'),cr=cs('--r'),cx=cs('--x'),gh=cs('--gh'),ko=cs('--ko'),fs=Math.max(9,W*.016);
+ ctx.clearRect(0,0,W,W);ctx.lineWidth=1.5;ctx.strokeStyle=tx;ctx.beginPath();ctx.arc(O,O,R,0,7);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(O-R,O);ctx.lineTo(O+R,O);ctx.strokeStyle=ln;ctx.lineWidth=1;ctx.stroke();
+ G.forEach(g=>arcs(g,1,g.id[0]=='r'?cr:cx,[]));
+ ctx.font=fs+'px sans-serif';ctx.textAlign='left';
+ G.forEach(g=>{if(g.id[0]=='r'){ctx.fillStyle=cr;const u=(+g.id.slice(2)-1)/(+g.id.slice(2)+1);ctx.fillText(g.id.slice(2),X([u,0])+2,O-3)}else{const x=+g.id.slice(2),q=C.div(C.sub([0,x],[1,0]),C.add([0,x],[1,0])),k=.9;ctx.fillStyle=cx;ctx.textAlign='center';ctx.fillText(g.id.slice(2),X([q[0]*k,q[1]*k]),Y([q[0]*k,q[1]*k]))}});
+ ctx.textAlign='center';ctx.fillStyle=tx;ctx.fillText('0',O-R-9,O+4);ctx.fillText('∞',O+R+10,O+4);
+ for(let a=-180;a<180;a+=5){const c=Math.cos(a*Math.PI/180),s=Math.sin(a*Math.PI/180),L=a%10?.008*W:.014*W;ctx.beginPath();ctx.moveTo(O+R*c,O-R*s);ctx.lineTo(O+(R+L)*c,O-(R+L)*s);ctx.strokeStyle=mu;ctx.stroke();
+  if(a%30==0){ctx.fillStyle=mu;ctx.fillText(a+'°',O+(R+.045*W)*c,O-(R+.045*W)*s+3)}}
+ for(let k=0;k<50;k++){const a=(180-720*k/100)*Math.PI/180,c=Math.cos(a),s=Math.sin(a),L=k%5?.01*W:.02*W;ctx.beginPath();ctx.moveTo(O+(R+.07*W)*c,O-(R+.07*W)*s);ctx.lineTo(O+(R+.07*W+L)*c,O-(R+.07*W+L)*s);ctx.strokeStyle=ac;ctx.stroke();
+  if(k%5==0){ctx.fillStyle=ac;ctx.fillText(f(k/100),O+(R+.12*W)*c,O-(R+.12*W)*s+3)}}
+ ctx.fillStyle=mu;ctx.fillText('angle de Γ',O,O-R-.062*W+fs*.2);ctx.fillStyle=ac;ctx.fillText('λ vers le générateur →',O,W-4);
+ S.dr.sel.forEach(id=>arcs(G.find(g=>g.id==id),3.5,ac));
+ S.dr.cc.forEach(k=>{ctx.beginPath();ctx.arc(X(k.c),Y(k.c),k.rad*R,0,7);ctx.lineWidth=2.5;ctx.strokeStyle=ac;ctx.stroke()});
+ ctx.save();ctx.beginPath();ctx.arc(O,O,R*1.25,0,7);ctx.clip();ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.strokeStyle=cs('--sc');
+ S.sc.forEach(l=>{const d=C.sub(l.b,l.a),n=C.abs(d),u=[d[0]/n*3,d[1]/n*3],A=C.sub(l.a,u),B=C.add(l.a,u);ctx.beginPath();ctx.moveTo(X(A),Y(A));ctx.lineTo(X(B),Y(B));ctx.stroke()});
+ S.cl.forEach(k=>{ctx.beginPath();ctx.arc(X(k.c),Y(k.c),k.rad*R,0,7);ctx.stroke()});ctx.restore();
+ if(S.p1){ctx.beginPath();ctx.arc(X(S.p1),Y(S.p1),4,0,7);ctx.fillStyle=cs('--sc');ctx.fill()}
+ ((S.inst&&S.inst.given)||[]).forEach(q=>dot(q.p,tx,q.lab));
+ S.dr.cs.forEach(r=>{ctx.beginPath();ctx.arc(O,O,r*R,0,7);ctx.lineWidth=2.5;ctx.strokeStyle=ac;ctx.stroke()});
+ S.dr.pts.forEach(q=>dot(q.p,ac,q.lab));
+ if(S.flash)arcs(G.find(g=>g.id==S.flash),3.5,ko);
+ const s=cur();if(s&&S.hl>=3){const gt=ghostOf(s);ctx.setLineDash([6,5]);ctx.lineWidth=2.5;ctx.strokeStyle=gh;
+  if(gt.t=='cc'){ctx.beginPath();ctx.arc(X(gt.c),Y(gt.c),gt.rad*R,0,7);ctx.stroke()}else if(gt.t=='c'){ctx.beginPath();ctx.arc(O,O,gt.rho*R,0,7);ctx.stroke()}else if(gt.t=='pt'){ctx.beginPath();ctx.arc(X(gt.p),Y(gt.p),14,0,7);ctx.stroke()}else arcs(G.find(g=>g.id==gt.id),3.5,gh,[6,5]);ctx.setLineDash([])}}
+const ghostOf=s=>s.ghost||(s.t=='sel'?{t:'sel',id:s.id}:s.t=='circ'?{t:'c',rho:s.rho}:s.t=='cc'?{t:'cc',c:s.c,rad:s.rad}:{t:'pt',p:s.p});
+
+/* ---------- Logique du jeu ---------- */
+let S={ex:null,inst:null,i:0,pts:0,hl:0,wr:0,dr:{pts:[],cs:[],sel:[],cc:[]},sc:[],cl:[],p1:null,tool:'sel',flash:null};
+const cur=()=>S.inst&&S.inst.steps[S.i];
+const total=()=>Object.values(best).reduce((a,b)=>a+b,0);
+function start(id,vi){const e=EX.find(x=>x.id==id),k=vi==null?Math.floor(Math.random()*e.V.length):vi,v=e.V[k];S={ex:e,vi:k,vn:v.n,inst:v.mk(),i:0,pts:0,hl:0,wr:0,dr:{pts:[],cs:[],sel:[],cc:[]},sc:[],cl:[],p1:null,tool:'sel',flash:null};render();draw()}
+function menu(){S.ex=null;S.inst=null;S.dr={pts:[],cs:[],sel:[],cc:[]};S.sc=[];S.cl=[];S.p1=null;render();draw()}
+function fb(m,c){const e=$('#fb');if(e){e.textContent=m;e.className=c}}
+function win(){const g=Math.max(2,10-3*S.hl-S.wr);S.pts+=g;S.i++;S.hl=0;S.wr=0;
+ if(S.i>=S.inst.steps.length){const k=S.ex.id+'|'+S.vn;best[k]=Math.max(best[k]||0,S.pts);save()}
+ render();draw();fb(`Correct ! +${g} pts`,'ok')}
+function wrong(m){S.wr++;fb(m,'ko')}
+function click(e){const s=cur();if(!s)return;const r=cv.getBoundingClientRect();let p=[((e.clientX-r.left)-O)/R,-((e.clientY-r.top)-O)/R];const tt=S.tool,L=tt=='ln'||tt=='cl';
+ if(C.abs(p)>(L?1.3:1.03))return;
+ if(L){const sn=[[0,0],...S.dr.pts.map(q=>q.p),...((S.inst.given)||[]).map(q=>q.p)].find(q=>C.abs(C.sub(p,q))<.04);if(sn)p=sn;
+  if(!S.p1){S.p1=p;return draw()}
+  const a=S.p1;S.p1=null;
+  if(tt=='ln'){if(C.abs(C.sub(a,p))>.01)S.sc.push({a,b:p});return draw()}
+  const rad=C.abs(C.sub(a,p));
+  if(s.t=='cc'){if(C.abs(C.sub(a,s.c))<.05&&Math.abs(rad-s.rad)<.05){S.dr.cc.push({c:s.c,rad:s.rad});return win()}S.cl.push({c:a,rad});draw();return wrong('Ce cercle n’est pas le bon.')}
+  S.cl.push({c:a,rad});return draw()}
+ if(s.t=='read')return fb('Cette étape se répond dans les champs ci-dessous.','');
+ if(tt=='sel'){let b=null,bd=1;G.forEach(g=>{const d=Math.abs(Math.hypot(p[0]-g.c[0],p[1]-g.c[1])-g.rad);if(d<bd){bd=d;b=g}});
+  if(bd>.035)return fb('Aucun trait du quadrillage à cet endroit.','');
+  if(s.t!='sel')return fb('Cette sélection ne répond pas à la question en cours.','');
+  if(b.id==s.id){S.dr.sel.push(b.id);win()}else{S.flash=b.id;draw();setTimeout(()=>{S.flash=null;draw()},900);wrong('Ce n’est pas le trait attendu.')}}
+ else if(tt=='pt'){if(s.t!='pt')return fb('Placer un point ne répond pas à la question en cours.','');
+  if(C.abs(C.sub(p,s.p))<.05){S.dr.pts.push({p,lab:s.lab});win()}else wrong('Ce point ne correspond pas.')}
+ else{if(s.t!='circ')return fb('Ce tracé ne répond pas à la question en cours.','');
+  if(Math.abs(C.abs(p)-s.rho)<.04){S.dr.cs.push(s.rho);win()}else wrong('Ce cercle n’est pas le bon.')}}
+cv.addEventListener('click',click);
+function submit(){const s=cur();let all=true;s.fields.forEach((fd,k)=>{const el=$('#f'+k),v=parseFloat((el.value||'').replace(',','.')),t=fd.tol||Math.max(.05,.06*Math.abs(fd.v)),ok=isFinite(v)&&Math.abs(v-fd.v)<=t;if(!ok)all=false;el.className=ok?'g':'b'});
+ all?win():wrong('Une ou plusieurs valeurs sont incorrectes (en rouge). Relis l’abaque.')}
+function hint(){const s=cur();if(S.hl>=3)return;S.hl++;$('#hints').innerHTML=s.h.slice(0,S.hl).map((t,k)=>`<div><b>Indice ${k+1}/3 : </b>${t}</div>`).join('');draw();if(S.hl>=3)fb('Indice 3 : la zone concernée est indiquée en pointillés sur l’abaque.','')}
+function tool(t){S.tool=t;S.p1=null;document.querySelectorAll('.tools button[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t==t));draw()}
+function clr(){S.sc=[];S.cl=[];S.p1=null;draw()}
+function render(){$('#tot').textContent=total()+S.pts;const P=$('#panel');
+ if(!S.ex){P.innerHTML=`<h2>Choisis un exercice</h2><p class="sm">Réponds en traçant sur l’abaque puis en lisant les valeurs. Chaque étape rapporte jusqu’à 10 points ; indices et erreurs en font perdre. Le brouillon (droites, cercles libres) est gratuit et illimité.</p>`+EX.map(e=>`<div class="card"><b>${e.lv} – ${e.name}</b><span>${e.d}</span><div class="row"><button class="btn" onclick="start(${e.id})">Variante aléatoire</button>${e.V.map((v,k)=>`<button class="btn alt" onclick="start(${e.id},${k})">${v.n} <span>(${best[e.id+'|'+v.n]||0} pts)</span></button>`).join('')}</div></div>`).join('');return}
+ const st=S.inst.steps,n=st.length,s=cur(),tb=[['sel','Trait du quadrillage'],['pt','Point'],['c','Cercle |Γ|'],['cl','Cercle libre'],['ln','Droite (brouillon)']];
+ let h=`<h2>${S.ex.lv} – ${S.ex.name}</h2><div class="sm">${S.vn}</div><div class="bar"><i style="width:${S.i/n*100}%"></i></div><div class="sm">Étape ${Math.min(S.i+1,n)}/${n} · ${S.pts} pts</div><div class="intro">${S.inst.intro}</div>`;
+ h+=st.slice(0,S.i).map(x=>`<div class="st d">✓ ${x.txt}</div>`).join('');
+ if(s){h+=`<div class="cur">${s.txt}</div><div class="tools" role="group" aria-label="Outils">${tb.map(([k,l])=>`<button data-t="${k}" onclick="tool('${k}')" class="${S.tool==k?'on':''}">${l}</button>`).join('')}<button class="clr" onclick="clr()">Effacer le brouillon</button></div><div class="sm">Droite : clique deux points (centre et points posés s’aimantent), elle se prolonge jusqu’aux échelles. Cercle libre : centre, puis un point du cercle.</div>`;
+  if(s.t=='read')h+=`<div class="fl">${s.fields.map((fd,k)=>`<label>${fd.l}<input id="f${k}" inputmode="decimal" autocomplete="off" onkeydown="if(event.key=='Enter')submit()"></label>`).join('')}<button class="btn" onclick="submit()">Valider</button></div>`;
+  h+=`<div class="row"><button class="btn alt" onclick="hint()">Indice${S.hl?` (${S.hl}/3)`:''}</button><button class="btn alt" onclick="menu()">Quitter</button></div><div id="hints"></div><div id="fb"></div>`}
+ else h+=`<div class="cur"><b>Exercice terminé : ${S.pts} / ${n*10} pts</b></div><div class="row"><button class="btn" onclick="start(${S.ex.id},${S.vi})">Nouveau tirage</button><button class="btn alt" onclick="menu()">Menu</button></div>`;
+ P.innerHTML=h;if(s&&S.hl)hint(),S.hl--}
+addEventListener('resize',size);matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
+render();size();
+</script></body></html>
